@@ -1,0 +1,1053 @@
+<title>Re-design 길잡이</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: every screen is one prescription slip on a desk; questions fill it in, the result is the finished slip. */
+:root{
+  --desk:#e6ecee;
+  --paper:#fcfdfd;
+  --ink:#14262e;
+  --muted:#566a73;
+  --rule:#cfdadd;
+  --accent:#17696f;
+  --accent-ink:#ffffff;
+  --tint:#eef5f5;
+  --stamp:#b5412c;
+  --font-display:"IBM Plex Sans KR","Noto Sans KR",system-ui,sans-serif;
+  --font-body:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --desk:#0d171b;--paper:#14232a;--ink:#e4eef0;--muted:#94aab3;--rule:#2a3f47;
+    --accent:#5cc4c8;--accent-ink:#0b1a1d;--tint:#1a2f35;--stamp:#ff9a82;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --desk:#0d171b;--paper:#14232a;--ink:#e4eef0;--muted:#94aab3;--rule:#2a3f47;
+  --accent:#5cc4c8;--accent-ink:#0b1a1d;--tint:#1a2f35;--stamp:#ff9a82;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--desk);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.7;padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.35;letter-spacing:-.01em}
+h1{font-size:1.9rem;font-weight:700}
+h2{font-size:1.45rem;font-weight:600}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.1em;color:var(--muted);font-weight:500;text-transform:uppercase}
+.slip{background:var(--paper);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 12px 28px -18px rgba(10,30,40,.45);border-top:3px solid var(--accent);animation:rise .28s ease-out}
+@keyframes rise{from{transform:translateY(6px)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.slip{animation:none}}
+.slip-head{display:flex;align-items:center;gap:16px;padding:18px 24px 16px;border-bottom:1px dashed var(--rule)}
+.rxmark{font-family:var(--font-display);font-weight:700;font-size:1.9rem;line-height:1;color:var(--stamp);letter-spacing:-.04em;flex:none}
+.slip-head.big .rxmark{font-size:3rem}
+.qh{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.qprog{display:flex;gap:5px}
+.qprog i{height:4px;flex:1;border-radius:2px;background:var(--rule)}
+.qprog i.on{background:var(--accent)}
+.body{padding:22px 24px 26px;display:flex;flex-direction:column;gap:18px}
+.lead{color:var(--muted)}
+.dx{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-size:.95rem}
+.dx dt{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.08em;color:var(--muted);padding-top:4px}
+.dx dd{margin:0;min-width:0}
+.opts{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.opt{all:unset;box-sizing:border-box;display:grid;grid-template-columns:2.4rem 1fr;gap:12px;align-items:start;width:100%;padding:14px 8px;border-bottom:1px dotted var(--rule);cursor:pointer;line-height:1.55}
+.opt .k{font-family:var(--font-display);font-weight:600;color:var(--muted);width:1.9rem;height:1.9rem;border:1px solid var(--rule);border-radius:50%;display:grid;place-items:center;font-size:.85rem;transition:background .12s,color .12s,border-color .12s}
+.opt small{display:block;color:var(--muted);font-size:.85rem}
+.opt:hover{background:var(--tint)}
+.opt:hover .k,.opt[aria-pressed="true"] .k{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.opt[aria-pressed="true"]{background:var(--tint);font-weight:500}
+.opt[aria-pressed="true"] .k::after{content:"✓"}
+.opt[aria-pressed="true"] .k{font-size:0}
+.opt[aria-pressed="true"] .k::after{font-size:.9rem}
+.opt:focus-visible,.btn:focus-visible,.chipbtn:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px}
+.crumb{font-size:.82rem;background:var(--tint);padding:2px 10px;border-radius:99px;border:1px solid var(--rule)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;border-radius:6px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);font-weight:500;font-size:.95rem}
+a.btn{display:inline-block}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+label.field{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--muted)}
+input[type=text],textarea{font:inherit;color:var(--ink);background:var(--tint);border:1px solid var(--rule);border-radius:6px;padding:10px 12px;width:100%}
+textarea{min-height:260px;resize:vertical;line-height:1.65}
+.hint{font-size:.85rem;color:var(--muted)}
+.ok{color:var(--accent);font-size:.88rem;font-weight:500}
+.strips{display:flex;flex-direction:column;gap:9px}
+.strip{display:grid;grid-template-columns:minmax(0,11.5rem) minmax(0,1fr) 3.4rem;gap:12px;align-items:center;font-size:.9rem}
+.strip .t{height:8px;background:var(--rule);border-radius:4px;overflow:hidden}
+.strip .t span{display:block;height:100%;background:var(--accent);opacity:.4}
+.strip.top .t span{opacity:1}
+.strip.top > span:first-child{font-weight:600}
+.strip .f{font-family:var(--font-mono);font-size:.7rem;font-weight:600;color:var(--stamp);text-align:right;letter-spacing:.06em}
+@media (max-width:480px){.strip{grid-template-columns:1fr 3.4rem}.strip .t{grid-column:1 / -1;order:3}}
+.secthead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding:20px 24px 4px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;padding:6px 24px 12px}
+.chipbtn{all:unset;box-sizing:border-box;cursor:pointer;font-size:.84rem;padding:4px 12px;border-radius:99px;border:1px solid var(--rule);background:var(--paper);color:var(--ink)}
+.chipbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.item{position:relative;border-top:1px dotted var(--rule);padding:18px 24px;display:flex;flex-direction:column;gap:10px}
+.item[hidden]{display:none}
+.item.picked::after{content:"담음";position:absolute;right:20px;top:14px;font-family:var(--font-display);font-weight:700;font-size:.8rem;color:var(--stamp);border:2px solid var(--stamp);border-radius:4px;padding:1px 8px;transform:rotate(-7deg);opacity:.9;pointer-events:none}
+.ihead{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline}
+.rxn{font-family:var(--font-mono);font-weight:600;font-size:.8rem;color:var(--stamp)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.lv{font-size:.74rem;font-weight:700;padding:1px 9px;border-radius:99px;border:1px solid currentColor}
+.lv.now{color:var(--accent)}
+.lv.class{color:#8a5a00}
+.lv.prep{color:var(--stamp)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lv.class{color:#f0c36a}}
+:root[data-theme="dark"] .lv.class{color:#f0c36a}
+.elt{font-size:.78rem;color:var(--muted)}
+.item details{margin-top:2px}
+.item summary{cursor:pointer;list-style:none;font-size:.88rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px;width:fit-content}
+.item summary::-webkit-details-marker{display:none}
+.item summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.item details[open] summary::before{transform:rotate(45deg)}
+.det{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.lab{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.det ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.say{border-left:3px solid var(--stamp);padding:2px 0 2px 12px}
+.exb{background:var(--tint);border-radius:6px;padding:10px 12px;font-size:.93rem}
+.kv{font-size:.9rem;color:var(--muted)}
+.kv b{color:var(--ink);font-weight:500}
+.why{font-size:.8rem;color:var(--muted)}
+.why b{font-weight:500;color:var(--ink)}
+.sumbox{border-top:1px dashed var(--rule);padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+.sig{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);border-top:1px solid var(--rule);padding:12px 24px 14px;font-family:var(--font-mono)}
+.brow{display:grid;gap:5px;padding:2px 0}
+.brow .l{font-size:.93rem;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.brow .l small{color:var(--muted)}
+.brow .bt{display:grid;grid-template-columns:minmax(0,1fr) 3.6rem;gap:10px;align-items:center}
+.brow .tr{height:10px;background:var(--rule);border-radius:5px;overflow:hidden}
+.brow .tr span{display:block;height:100%;background:var(--accent);opacity:.45}
+.brow.hot .tr span{opacity:1}
+.brow .n{font-family:var(--font-mono);font-size:.78rem;font-weight:600;text-align:right;color:var(--ink)}
+.brow.hot .n{color:var(--stamp)}
+.together{font-size:.72rem;font-weight:700;color:var(--stamp);border:1px solid currentColor;border-radius:99px;padding:0 8px}
+.bigline{font-size:1rem}
+.bigline b{font-family:var(--font-display);font-size:2rem;line-height:1;color:var(--accent);margin-right:6px}
+.sendbox{border-top:1px dashed var(--rule);padding:22px 24px 8px;display:flex;flex-direction:column;gap:12px}
+.bsec{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const EL = {G:"수업 목표 제시",A:"학습 활동 제시",T:"AI·디지털 기술의 역할",L:"학생의 학습과정",S:"교사의 지원",E:"평가"};
+const ELKEYS = ["G","A","T","L","S","E"];
+
+/* 처방 라이브러리: t 제목, el 관련 요소, tip 이렇게 하면 좋다, how 해 볼 일, say 발문·문장틀, ex 수업 예시, ev 남길 증거 */
+const RX = {
+r_interpret:{t:"그래프를 만든 뒤 ‘해석 질문’으로 먼저 말해 보기",el:["A","S"],
+ tip:"결과를 바로 글로 쓰게 하면 수치 나열로 끝나기 쉬워요. 질문으로 먼저 말하게 한 다음 쓰게 하세요.",
+ how:["(3분) 그래프가 나오면 모둠이 ‘가장 큰 것은? 가장 작은 것은? 예상과 다른 점은?’ 세 질문에 말로 답합니다.","(2분) ‘그래서 왜 그럴까?’에 대한 이유 가설을 한 문장씩 활동지에 적습니다.","(5분) 그 문장을 첫 문장으로 삼아 기사문·보고서를 씁니다."],
+ say:"“수치를 읽는 것은 해석이 아니에요. 이 숫자 뒤에 어떤 이야기가 숨어 있을까요?”",
+ ex:"‘우리 반이 가장 좋았던 학년’ 띠그래프에서 ‘5학년이 40%로 가장 많다’를 읽은 뒤, ‘체험학습이 있었기 때문일까?’ 가설을 쓰고 기사문 첫 문장으로 씁니다.",
+ ev:"이유 가설 문장, 기사문 수정 전·후"},
+r_guess:{t:"분석·예측 전에 내 예상을 먼저 쓰기",el:["L","A"],
+ tip:"예상 → 결과 비교 → 이유 쓰기 순서로 하면 결과를 받아 적기만 하는 일이 줄어요.",
+ how:["(1분) 결과를 보여 주기 전에 ‘이럴 것 같다’를 한 줄로 쓰고 이름을 적어 둡니다.","(2분) 결과가 나오면 예상과 같은 점·다른 점을 두 칸에 적습니다.","(3분) 다른 점에 대해 ‘왜 달랐을까?’ 이유를 쓰고 짝에게 말합니다."],
+ say:"“결과를 보기 전에 먼저 예상해 볼까요? 틀려도 괜찮아요. 틀린 이유가 오늘의 배움이에요.”",
+ ex:"엔트리로 100년 뒤 기온을 예측하기 전에 ‘얼마일 것 같은지’를 쓰고, 예측값과 비교해 ‘예상보다 높은/낮은 이유’를 활동지에 적습니다.",
+ ev:"예상 메모, 같은 점·다른 점, 이유 한 줄"},
+r_reason:{t:"주제·항목을 고른 이유를 적고 선택하기",el:["L"],
+ tip:"고르는 기준을 주면 흥미 위주로 고르는 일이 줄고, 해석할 거리가 많은 주제를 고르게 돼요.",
+ how:["(3분) 모둠이 후보를 3개 이상 적습니다.","(3분) 기준표(탐구 목적에 맞는가 / 조사할 수 있는가 / 그래프로 알 수 있는 사실이 많은가)에 ○△×를 표시합니다.","(1분) 최종 선택과 이유를 한 줄로 적습니다."],
+ say:"“재미있는 것과 알아낼 것이 많은 것은 달라요. 이 항목으로 어떤 사실을 알 수 있을까요?”",
+ ex:"‘선생님 별명 설문’ 항목에 ‘100세 이상’을 넣고 싶을 때, ‘이 항목으로 알 수 있는 사실이 있나?’를 기준에 비춰 보고 넣을지 정합니다.",
+ ev:"후보와 기준표, 선정 이유 한 줄"},
+r_roles:{t:"역할 나누기: 도구는 만들기, 학생은 고르고 확인하고 해석하기",el:["T"],
+ tip:"도구가 하는 일과 학생이 하는 일을 나눠 적어 두면 사고를 대신하는 문제를 막을 수 있어요.",
+ how:["수업안에 두 칸 표를 만듭니다. 왼쪽은 ‘도구가 하는 일’, 오른쪽은 ‘학생이 하는 일’.","오른쪽 칸에 선택·확인·해석 중 최소 하나가 있는지 점검합니다.","학생에게도 첫 시간에 같은 표를 보여 주고 ‘오늘 내가 맡은 일’을 말하게 합니다."],
+ say:"“그래프는 웹앱이 만들어 줘요. 그런데 이 그래프가 맞는지, 무슨 뜻인지는 누가 정할까요?”",
+ ex:"웹앱: 수치를 입력하면 띠·원그래프 자동 생성 / 학생: 항목 선정, 수치 확인(합계 100%), 해석 문장 쓰기.",
+ ev:"역할 구분표(교사용), ‘오늘 내가 한 일’ 한 줄(학생용)"},
+r_check:{t:"자동 결과 확인 체크: 눈금·합계·단위",el:["T","L"],
+ tip:"도구가 만든 그래프도 학생이 직접 맞는지 확인하는 단계를 두세요. 확인이 곧 학습의 증거가 됩니다.",
+ how:["활동지에 체크 세 칸을 둡니다: ① 세로축이 0에서 시작하는가 ② 비율 합계가 100%인가 ③ 제목·단위가 있는가.","모둠이 점검하고 이상하면 빨간 펜으로 표시합니다.","틀린 곳이 있으면 ‘왜 틀렸을까?’를 한 줄 적고 고칩니다."],
+ say:"“컴퓨터가 만든 그림도 틀릴 수 있어요. 세 가지만 확인해 볼까요?”",
+ ex:"입력한 수치의 합이 98%여서 그래프가 이상하게 나온 경우를 일부러 보여 주고, 학생이 오류를 찾아 고치게 합니다.",
+ ev:"확인 체크표, 고친 곳과 이유"},
+r_meaning:{t:"값의 의미와 한계를 확인하고, 이유는 다른 자료로 확인하기",el:["T","L"],
+ tip:"검색량 그래프의 숫자는 ‘사람 수’가 아니라 ‘가장 많이 검색된 때를 100으로 둔 상대값’이에요. 값의 뜻을 먼저 읽고, ‘왜 늘었을까?’는 다른 자료로 확인하게 하세요.",
+ how:["(3분) 그래프를 보여 주고 ‘세로축의 100은 무엇일까요?’를 짝끼리 말하게 합니다. 이어서 ‘100 = 가장 많이 검색된 때, 50 = 그때의 절반’을 칠판에 적습니다.","(5분) 활동지에 ‘가장 높은 때 / 가장 낮은 때 / 변화가 큰 구간’ 세 칸을 만들고 칸마다 ‘왜 그랬을까?’ 가설을 한 줄씩 적게 합니다.","(7분) 가설마다 확인할 자료를 하나씩 정합니다(뉴스 기사, 통계청 출생아 수, 정책 발표 시기). 찾은 자료로 ‘맞다 / 아니다 / 모르겠다’를 표시합니다."],
+ say:"“숫자 70은 검색한 사람이 70명이라는 뜻일까요? 이 그래프만으로 ‘이유’까지 알 수 있을까요?”",
+ ex:"저출산 프로젝트에서 데이터랩 그래프를 본 뒤 ‘2022년에 관심이 높아졌다 → 정책 발표 기사 확인 → 가설 맞음’으로 기록하고, 보고서에는 ‘관심도(상대값)’라고 표기합니다.",
+ ev:"가설·확인한 자료·판단(맞다/아니다/모르겠다)을 적은 활동지"},
+r_predict:{t:"예측은 ‘추세 연장’임을 알리고, 값이 달라지는 이유 토의하기",el:["T","S"],
+ tip:"예측값은 지난 흐름을 이어 계산한 값이라 학습할 때마다 달라질 수 있어요. 그 사실을 먼저 알리고 ‘얼마나 믿을까?’를 토의하게 하세요.",
+ how:["(2분) ‘모델은 과거 그래프를 쭉 이어서 그린 값을 낸다’를 그림 한 장으로 설명합니다.","(5분) 같은 자료로 모델을 두 번 학습시켜 값이 다른지 비교합니다. 다르면 이유를 모둠이 예상해 봅니다.","(5분) ‘이 값을 어디까지 믿을 수 있을까?’ 등급(믿음 / 조심 / 모름)과 이유를 적습니다."],
+ say:"“예측은 점쟁이가 아니라 ‘지금까지의 흐름을 이어 그린 선’이에요. 갑자기 정책이 바뀌면 어떻게 될까요?”",
+ ex:"100년 뒤 기온 예측값이 학습마다 달라질 때, ‘값 두 개의 차이’와 ‘믿을 수 있는 범위’를 말과 글로 남깁니다.",
+ ev:"예상·예측값 비교, 믿음 등급과 이유"},
+r_rubric:{t:"평가기준 전→후 다시 쓰기",el:["E"],
+ tip:"‘올바르게 그렸다’ 같은 결과 기준을 ‘선택 이유와 해석 근거’ 기준으로 바꿔 보세요.",
+ how:["지금 평가기준을 한 줄 적습니다. 예: ‘띠그래프로 올바르게 나타낼 수 있다.’","동사를 ‘설명한다 / 근거를 든다 / 고쳐 쓴다’로 바꿔 다시 씁니다.","상·중·하 설명에 ‘선택·확인·수정’ 과정을 한 줄씩 넣습니다."],
+ say:"“이 기준으로 학생이 무엇을 생각했는지 알 수 있을까?”",
+ ex:"전: 자료를 띠그래프로 나타낼 수 있다 → 후: 목적에 맞는 그래프를 고른 이유를 말하고, 그래프에서 알 수 있는 사실과 그 근거를 설명한다.",
+ ev:"수정한 평가기준 한 장(전·후 비교)"},
+r_evidence2:{t:"학습의 증거 2가지만 정하기",el:["E"],
+ tip:"증거를 많이 모으려 하지 말고 단계마다 하나씩만 정하면 실행하기 쉬워요.",
+ how:["수업 단계(수집·그래프·해석)를 적습니다.","단계마다 남길 증거를 하나씩 정합니다. 예: 선택 이유, 해석 문장, 수정 전·후.","활동지 한 장에 칸으로 모아 받습니다."],
+ say:"“오늘 수업에서 학생이 생각했다는 것을 보여 주는 흔적은 무엇일까요?”",
+ ex:"수집: 항목 선정 이유 / 그래프: 확인 체크 / 해석: 해석 문장과 수정 전·후 → 활동지 한 장에 세 칸.",
+ ev:"증거 3칸 활동지"},
+r_ailog:{t:"AI 사용 기록 한 줄 남기기: 채택·수정·기각 이유",el:["E","L"],
+ tip:"기록이 있으면 학생이 판단한 부분과 AI가 만든 부분을 구분할 수 있어요.",
+ how:["활동지에 세 칸을 둡니다: ‘받은 결과 → 내가 바꾼 점 → 바꾼 이유’.","학생이 도구를 쓸 때마다 한 줄 이상 적습니다.","제출할 때 결과물과 함께 냅니다."],
+ say:"“그대로 쓴 것도 괜찮아요. 왜 그대로 썼는지 한 줄만 적어 볼까요?”",
+ ex:"AI 글쓰기 도우미 제안 5개 중 3개를 받아들이고 2개는 거절한 이유를 적습니다.",
+ ev:"AI 사용 기록 한 줄"},
+r_oral:{t:"1분 구술 설명으로 이해 확인하기",el:["E"],
+ tip:"글이 비슷해도 말로 설명하게 하면 학생의 이해가 드러나요.",
+ how:["모둠마다 1분 ‘왜 이 그래프를 골랐나요? 무엇을 알 수 있나요?’를 묻습니다.","체크리스트에 ○/△만 표시합니다(선택 이유 / 해석 근거).","△는 다음 시간 첫 5분에 다시 묻습니다."],
+ say:"“그림 말고 말로 설명해 볼까요? 이 부분은 어떻게 알았어요?”",
+ ex:"발표 시간 대신 순회하며 모둠마다 1분씩 묻고 ○△를 기록합니다.",
+ ev:"구술 확인 체크표"},
+r_standard:{t:"성취기준을 풀어 목표에 ‘해석·판단’ 문장 넣기",el:["G"],
+ tip:"성취기준의 동사를 활동과 하나씩 맞춰 보면 빠진 부분이 보여요.",
+ how:["성취기준을 동사 단위로 나눕니다. 예: 수집한다 / 나타낸다 / 해석한다.","동사마다 대응하는 활동을 적고, 빈 곳을 찾습니다.","목표에 ‘근거를 들어 설명한다’를 한 문장 추가합니다."],
+ say:"“이 성취기준에서 학생이 할 일은 무엇이고, 오늘 활동 중 어디에 있나요?”",
+ ex:"[6수04-02] 수집한다→설문, 나타낸다→웹앱 입력, 해석한다→빈 칸 → 해석 질문 활동을 추가.",
+ ev:"성취기준-활동 대응표, 수정한 목표"},
+r_need:{t:"AI 없이도 가능한지 점검하고 꼭 필요한 곳만 남기기",el:["G","T"],
+ tip:"활동마다 ‘AI가 없으면 못 하는 학습은?’을 물으면 필요한 곳이 분명해져요.",
+ how:["활동 목록에 AI·디지털 도구 사용 여부를 표시합니다.","표시한 활동마다 ‘없으면 못 하는 학습’을 한 줄 적습니다.","적지 못하면 단순한 도구로 바꾸거나 줄입니다."],
+ say:"“이 도구가 없으면 학생은 무엇을 못 하나요?”",
+ ex:"자동 그래프는 ‘표현 시간 절약 → 해석 시간 확보’라는 이유가 분명하므로 유지, 단순한 문장 점검 AI는 줄입니다.",
+ ev:"도구 필요성 메모"},
+r_align:{t:"목표-활동-도구-평가 정렬표 한 장 만들기",el:["G","E"],
+ tip:"네 칸을 한 줄로 이어 보면 끊어진 고리가 바로 보여요.",
+ how:["4열 표(목표 / 활동 / 도구 / 평가)를 만듭니다.","활동 하나당 한 행을 채웁니다.","빈 칸이나 맞지 않는 칸을 표시하고 고칩니다."],
+ say:"“이 활동은 목표를 위한 것인가요, 도구를 쓰기 위한 것인가요?”",
+ ex:"활동 ‘웹앱 입력’에 평가가 비어 있으면 ‘수치 확인 체크’를 평가 칸에 추가합니다.",
+ ev:"정렬표"},
+r_goal1:{t:"수업 목표를 한 문장으로 다시 쓰기",el:["G"],
+ tip:"도구 이름은 빼고, 학생이 배울 것과 보여 줄 것을 중심으로 쓰면 목표가 분명해져요.",
+ how:["틀에 넣어 씁니다: ‘(자료)를 (활동)하여 (결과)를 설명한다.’","도구 이름이 들어 있으면 지웁니다.","학생이 읽고 오늘 할 일을 말할 수 있는지 확인합니다."],
+ say:"“오늘 끝났을 때 여러분은 무엇을 설명할 수 있으면 될까요?”",
+ ex:"전: 웹앱으로 그래프를 만들 수 있다 → 후: 수집한 설문 결과를 그래프로 나타내고, 알게 된 사실의 이유를 설명한다.",
+ ev:"다시 쓴 목표 한 문장"},
+r_hook:{t:"도구 시연 대신 문제 상황과 질문으로 시작하기",el:["G","A"],
+ tip:"궁금한 질문에서 출발하면 도구가 목적이 되는 일을 막고 교과와 이어져요.",
+ how:["(3분) 도입에 흥미로운 장면(뉴스 한 줄, 그래프 하나)을 보여 줍니다.","(3분) 학생이 ‘궁금한 점’을 하나씩 붙임쪽지에 씁니다.","(3분) ‘이 질문에 답하려면 어떤 자료가 필요할까?’를 말하게 하고 그다음에 도구를 소개합니다."],
+ say:"“우리 학교에 대해 궁금한 것 하나만 써 볼까요? 어떤 자료가 있으면 답할 수 있을까요?”",
+ ex:"출산율 그래프를 보여 준 뒤 ‘왜 줄고 있을까?’ 질문을 만들고, 빅카인즈와 데이터랩이 그 답을 찾는 도구로 등장합니다.",
+ ev:"학생이 만든 탐구 질문"},
+r_ethics:{t:"수집 전 윤리 점검 단계: 개인정보·표현·표본",el:["S","L"],
+ tip:"설문이나 자료를 모으기 전에 모둠끼리 점검하는 5분을 넣어 보세요.",
+ how:["모둠 설문 문항 초안을 다른 모둠과 바꿉니다.","점검표로 확인합니다: 이름·가정 상황을 묻는가 / 놀리거나 무례한가 / 응답자가 한쪽에 치우쳤는가.","고칠 곳을 표시하고 고친 뒤 시작합니다."],
+ say:"“이 질문을 받는 친구 기분은 어떨까요? 누구에게 물어보면 공정할까요?”",
+ ex:"‘가장 못생긴 친구는?’ 같은 문항은 삭제하고, ‘우리 반이 가장 좋았던 학년은?’으로 바꿉니다.",
+ ev:"문항 점검표, 고친 문항"},
+r_source:{t:"출처·시기·사용 도구 표기를 습관으로 만들기",el:["S"],
+ tip:"결과물 맨 아래에 고정 칸을 만들면 표기를 잊지 않아요.",
+ how:["활동지 아래에 ‘자료 출처 / 조사 시기 / 사용한 도구’ 세 칸을 고정합니다.","AI를 쓴 경우 도구 이름도 적게 합니다.","첫 시간에 좋은 예와 부족한 예를 하나씩 보여 줍니다."],
+ say:"“이 숫자는 어디에서 왔고 언제 조사한 건가요?”",
+ ex:"‘기상청 기상자료개방포털, 2025년 자료, 엔트리 데이터 분석’으로 적습니다.",
+ ev:"출처 칸"},
+r_time:{t:"시간 배분표를 먼저 만들고 꼭 남길 활동 정하기",el:["S"],
+ tip:"수집·분석·해석 시간을 분 단위로 먼저 나누고, 모자라면 해석이 아니라 수집 규모를 줄이세요.",
+ how:["수업 시간을 단계별로 나눕니다. 예: 도입 5 / 수집 10 / 그래프 10 / 해석 15 / 정리 5.","꼭 남길 활동 한 가지(해석)에 가장 긴 시간을 줍니다.","시간이 모자라면 수집 규모(응답 수, 항목 수)부터 줄입니다."],
+ say:"“오늘 가장 중요한 15분은 어디인가요?”",
+ ex:"설문 항목을 5개에서 3개로 줄이고 해석 시간을 5분 더 확보합니다.",
+ ev:"시간 배분표"},
+r_prep:{t:"접속·로그인 대비: 미리 받은 자료와 대체 활동 준비하기",el:["S"],
+ tip:"사이트가 안 열릴 때를 대비한 파일 하나가 수업 흐름을 지켜 줘요.",
+ how:["수업 전날 사이트에 접속해 실제 화면을 캡처하고 자료 파일을 내려받아 둡니다.","계정이 필요한 도구는 수업 전에 한 번 로그인해 보게 합니다.","접속이 안 되면 캡처 자료로 해석 활동부터 진행합니다."],
+ say:"“사이트가 안 되면 이 파일로 같은 활동을 해 볼 거예요.”",
+ ex:"기상자료개방포털이 느릴 때를 대비해 충남 폭염일수 CSV를 미리 학급 공유 폴더에 넣어 둡니다.",
+ ev:"대비 자료 목록"},
+r_device:{t:"모둠당 1대와 역할 카드 쓰기",el:["S","A"],
+ tip:"기기가 모자라도 역할을 나누면 모두가 참여해요.",
+ how:["모둠 역할 카드 4장(입력 / 확인 / 기록 / 발표)을 만듭니다.","수업마다 한 칸씩 돌려 맡습니다.","기기를 쓰지 않는 역할은 종이에 기록합니다."],
+ say:"“오늘 내 역할은 무엇이고, 다음 시간에는 무엇을 해 볼까요?”",
+ ex:"4명 모둠에서 입력 담당이 수치를 입력하는 동안 확인 담당이 합계 100%를 확인합니다.",
+ ev:"역할 카드, 역할 기록"},
+r_level:{t:"수준 차이 대비: 예시 자료·짝 도움·심화 과제",el:["S","A"],
+ tip:"도움 장치와 확장 과제를 미리 준비하면 속도 차이가 부담이 되지 않아요.",
+ how:["도움이 필요한 학생용 ‘완성 예시’ 한 장을 준비합니다.","빨리 끝난 학생에게 ‘다른 그래프로 비교하기’ 도전 과제를 줍니다.","짝 도우미는 답을 알려 주지 않고 ‘질문으로 돕기’ 규칙을 정합니다."],
+ say:"“먼저 끝났으면 같은 자료를 다른 그래프로 바꿔 볼까요? 어느 쪽이 더 잘 보이나요?”",
+ ex:"원그래프를 만든 학생이 같은 자료로 막대그래프를 만들어 ‘어떤 그래프가 더 비교하기 쉬운지’ 한 줄 씁니다.",
+ ev:"도전 과제 기록"},
+r_frame:{t:"해석 문장틀과 체크리스트 주기",el:["A","S"],
+ tip:"문장틀이 있으면 수치 나열에서 이유와 한계까지 쓰기가 쉬워져요.",
+ how:["문장틀을 줍니다: ‘~가 가장 많다. 왜냐하면 ~. 하지만 ~는 더 확인해야 한다.’","체크리스트로 확인합니다: 수치 / 이유 / 한계 세 가지가 있는가.","틀을 쓴 글과 쓰지 않은 글을 비교해 보게 합니다."],
+ say:"“숫자만 쓰지 말고 ‘왜냐하면’을 꼭 넣어 볼까요?”",
+ ex:"‘40~50대가 39.1%로 가장 많다. 왜냐하면 선생님이 나이 들어 보이기 때문일 것이다. 하지만 어른의 나이를 어떻게 아는지는 더 확인해야 한다.’",
+ ev:"문장틀을 쓴 해석 문장"},
+r_compare:{t:"같은 자료로 다른 방법을 만들어 비교하고 고르기",el:["A","L"],
+ tip:"선택지를 둘 이상 보면 학생이 ‘왜 이걸 골랐는지’ 말하게 돼요.",
+ how:["같은 자료를 두 가지 그래프(또는 분석)로 나타냅니다.","두 개를 나란히 놓고 ‘알 수 있는 것 / 알기 어려운 것’을 표에 씁니다.","어느 쪽이 목적에 더 맞는지 고르고 이유를 씁니다."],
+ say:"“같은 자료인데 모양이 달라졌네요. 우리 질문에는 어느 쪽이 더 잘 대답하나요?”",
+ ex:"비율을 보려면 원그래프, 항목끼리 크기를 비교하려면 막대그래프가 낫다는 것을 직접 비교해 정리합니다.",
+ ev:"비교표와 선택 이유"},
+r_self:{t:"도구를 쓰기 전에 내 생각 먼저 쓰기",el:["L"],
+ tip:"2분의 초안만 있어도 도구 결과와 내 생각을 비교할 수 있어요.",
+ how:["도구를 열기 전 2분 동안 내 생각·초안을 씁니다.","도구 결과를 받은 뒤 내 초안과 비교해 ‘바꿀 점’을 표시합니다.","바꾼 이유를 한 줄 적습니다."],
+ say:"“도구를 열기 전에 먼저 내 생각을 써 볼까요?”",
+ ex:"글쓰기 도우미를 켜기 전에 기사문 첫 문단을 먼저 쓰고, 도우미 제안과 비교해 고칩니다.",
+ ev:"초안 메모, 바꾼 점"},
+r_revise:{t:"수정·재구성 단계 넣기",el:["A","L"],
+ tip:"받은 결과를 ‘내 말로 고치는’ 단계를 두면 그대로 쓰는 일이 줄어요.",
+ how:["도구 결과를 받으면 ‘내 말로 고쳐 쓰는 시간’을 따로 둡니다(최소 5분).","고칠 때는 최소 한 곳은 ‘내 경험이나 예시’를 넣게 합니다.","수정 전·후를 함께 제출합니다."],
+ say:"“그대로 쓰기 전에 내 말로 바꿔 쓴다면 어느 부분을 고치고 싶나요?”",
+ ex:"AI가 정리해 준 설문 결과 문단에 우리 반 이야기를 한 문장 덧붙입니다.",
+ ev:"수정 전·후"},
+r_reflect:{t:"내 선택과 도구 활용을 돌아보는 두 문장",el:["L","E"],
+ tip:"마지막 5분에 짧게 쓰면 성찰과 평가 증거를 한꺼번에 얻어요.",
+ how:["마지막 5분에 두 문장을 씁니다: ‘가장 도움이 된 점’, ‘내가 바꾼 점’.","원하면 ‘다음에 달리하고 싶은 점’을 한 줄 더합니다.","모둠에서 한 문장씩 읽어 줍니다."],
+ say:"“오늘 도구가 가장 도움이 된 순간과, 내가 직접 판단한 순간을 하나씩 써 볼까요?”",
+ ex:"‘웹앱이 그래프를 그려 줘서 해석에 집중할 수 있었다. 눈금이 이상해서 내가 고쳤다.’",
+ ev:"성찰 두 문장"},
+r_terms:{t:"통계 용어를 그림 카드와 예시로 안내하기",el:["S"],
+ tip:"용어 카드 한 장이 개념 차이를 줄여 줘요.",
+ how:["수업에서 쓰는 용어 5개를 고릅니다(띠그래프, 비율, 표본, 평균 등).","용어마다 그림 한 장과 우리 반 예시를 한 줄씩 붙인 카드를 만듭니다.","모둠 책상에 올려 두고 질문이 나오면 카드를 보게 합니다."],
+ say:"“이 단어는 그림으로 보면 이런 뜻이에요. 우리 설문에서는 어디에 해당할까요?”",
+ ex:"‘표본: 설문에 답한 사람들’ 카드에 ‘우리 반 23명 중 20명이 응답’이라는 예시를 붙입니다.",
+ ev:"용어 카드"},
+r_simple:{t:"필요한 기능만 쓰는 단순 템플릿 만들기",el:["T"],
+ tip:"교사가 미리 틀을 만들어 두면 사용법에 쓰는 시간이 줄어요.",
+ how:["수업에서 필요한 기능 3가지만 정합니다.","그 기능만 보이는 템플릿(입력 칸만 있는 시트나 웹앱)을 만듭니다.","학생에게는 ‘수치 입력 → 확인 → 해석’ 순서만 안내합니다."],
+ say:"“오늘은 이 칸에 숫자만 넣으면 돼요. 나머지는 자동으로 나옵니다.”",
+ ex:"구글 시트에 수치 입력 칸과 합계 자동 계산 칸만 남기고 나머지는 숨깁니다.",
+ ev:"템플릿 파일"},
+r_light:{t:"증거 정리는 가볍게, 피드백으로 잇기",el:["E","S"],
+ tip:"전부 정리하지 말고 모둠당 하나만 확인해도 충분해요.",
+ how:["전수 정리 대신 모둠당 1개 표본을 확인합니다.","확인한 증거에서 ‘잘한 점 1 / 더 생각해 볼 점 1’을 메모합니다.","다음 시간 첫 5분에 반 전체에 공유합니다."],
+ say:"“지난 시간에 한 모둠이 이런 이유를 썼어요. 우리는 어떻게 생각할까요?”",
+ ex:"해석 문장 중 모둠당 하나를 골라 ‘이 문장이 좋은 이유’를 함께 말해 봅니다.",
+ ev:"피드백 메모"},
+r_notice:{t:"AI 활용 사실과 개인정보 규칙 안내하기",el:["S"],
+ tip:"안내문 한 장과 ‘이름 대신 별명’ 같은 규칙이면 걱정이 줄어요.",
+ how:["도구 이름, 쓰는 이유, 입력하지 않을 정보(이름·얼굴·연락처)를 한 장으로 정리합니다.","학생에게는 ‘이름은 별명으로, 사진은 쓰지 않기’ 규칙을 정합니다.","학교 정책과 도구 약관을 한 번 확인합니다."],
+ say:"“도구에 넣지 말아야 할 정보는 무엇일까요?”",
+ ex:"학부모 알림장에 ‘수업 중 쓰는 도구와 개인정보를 입력하지 않는다’는 내용을 안내합니다.",
+ ev:"안내문, 규칙 카드"},
+r_team:{t:"모둠 역할과 개인 책무 나누기",el:["A","L"],
+ tip:"역할을 돌려 맡고 개인 해석 한 줄을 쓰면 무임승차가 줄어요.",
+ how:["수집·확인·해석·기록 네 역할을 정합니다.","수업마다 역할을 돌려 맡습니다.","마지막에 각자 개인 해석 한 줄을 씁니다."],
+ say:"“우리 모둠이 한 결과를 내 말로 한 줄 써 볼까요?”",
+ ex:"모둠 그래프는 하나지만 해석 문장은 학생마다 한 줄씩 제출합니다.",
+ ev:"개인 해석 한 줄"},
+r_exemplar:{t:"다른 교사도 쓸 수 있게 지도안과 자료 묶기",el:["S"],
+ tip:"활동지·예시·접속 방법을 한 묶음으로 만들면 공유하기 쉬워요.",
+ how:["활동지·예시 자료·접속 방법을 한 폴더로 정리합니다.","교사 안내 한 장(주안점·발문·시간)을 씁니다.","동료에게 한 번 실행해 보게 하고 막힌 곳을 수정합니다."],
+ say:"“이 수업을 처음 하는 선생님이 막힐 곳은 어디일까요?”",
+ ex:"‘준비물 / 순서 / 막힐 때’ 세 칸짜리 안내문을 폴더 맨 앞에 둡니다.",
+ ev:"교사 안내서"},
+r_pair:{t:"짝 점검: 서로의 결과를 바꿔 보며 오류 찾기",el:["T","L"],
+ tip:"내 결과는 잘 못 보지만 친구 결과는 잘 보여요. 짝 점검 3분이면 오류가 많이 잡혀요.",
+ how:["짝과 결과(그래프·표)를 바꿉니다.","점검표(눈금 / 합계 / 단위 / 제목)를 보며 오류 후보를 찾습니다.","찾은 것은 ‘질문’으로 알려 줍니다. 예: ‘여기가 100%가 안 되는데 왜일까?’"],
+ say:"“답을 알려 주지 말고 질문으로 알려 주세요.”",
+ ex:"친구의 원그래프 합이 105%여서 ‘이 칸 수치를 다시 볼까?’라고 묻습니다.",
+ ev:"짝 점검 메모"},
+r_question:{t:"학생이 탐구 질문을 만드는 질문 사다리",el:["A","L"],
+ tip:"좋은 질문의 기준 세 가지를 알려 주고 3개를 만든 뒤 1개를 고르게 하세요.",
+ how:["기준을 제시합니다: 자료로 답할 수 있는가 / 알고 싶은가 / 너무 크지 않은가.","질문 3개를 만들고 기준에 비춰 하나를 고릅니다.","고른 질문을 더 작은 질문으로 쪼개 봅니다."],
+ say:"“자료로 답할 수 있는 질문일까요? 너무 크면 어떻게 쪼갤까요?”",
+ ex:"‘저출산은 왜 일어날까?’를 ‘최근 10년 출생아 수는 어떻게 변했을까?’로 줄입니다.",
+ ev:"질문 3개와 선택 이유"},
+r_cleaning:{t:"자료 정리 활동: 이상한 값 찾기",el:["A","L"],
+ tip:"자료를 모으면 빈칸·오타·튀는 값이 섞여요. 찾아서 고치는 활동 자체가 학습이 돼요.",
+ how:["일부러 오류(빈칸, 오타, 너무 큰 값)를 넣은 예시 표를 줍니다.","모둠이 오류를 찾아 동그라미 치고 이유를 씁니다.","우리 자료에도 같은 점검표를 적용합니다."],
+ say:"“이 값은 진짜일까요, 입력 실수일까요? 어떻게 확인할 수 있을까요?”",
+ ex:"설문 응답 중 ‘100세 이상’과 ‘기타’ 같은 항목을 어떻게 처리할지 모둠이 정하고 이유를 씁니다.",
+ ev:"오류 찾기 기록"},
+r_graphchoice:{t:"그래프 고르기 기준표",el:["A","L"],
+ tip:"‘무엇을 보고 싶은가’에 따라 그래프를 고르는 기준표를 주면 학생이 이유를 말해요.",
+ how:["표를 줍니다: 비율→띠·원그래프 / 변화→꺾은선 / 크기 비교→막대.","내 질문이 어느 칸에 해당하는지 표시합니다.","고른 그래프와 이유를 한 줄 씁니다."],
+ say:"“우리가 알고 싶은 것은 비율인가요, 변화인가요, 비교인가요?”",
+ ex:"‘학년별로 인기가 어떻게 달라졌나?’ → 변화이므로 꺾은선그래프를 고릅니다.",
+ ev:"기준표와 선택 이유"},
+r_sample:{t:"표본 점검 질문: 몇 명에게, 누구에게 물었나",el:["S","L"],
+ tip:"표본이 치우치면 결론이 틀려요. 질문 세 개로 확인하게 하세요.",
+ how:["점검 질문: ① 몇 명에게 물었나 ② 누구에게 물었나 ③ 다른 반에 물었어도 같을까?","모둠이 답을 쓰고 부족하면 보완합니다.","결과 해석에 ‘우리 반 학생 20명 기준’처럼 범위를 밝힙니다."],
+ say:"“우리 반 결과를 전교생 결과처럼 말해도 될까요?”",
+ ex:"6학년 1반 20명에게만 물어서 ‘우리 학교 전체가 5학년을 좋아한다’고 쓰지 않도록 고칩니다.",
+ ev:"표본 점검 기록"},
+r_distort:{t:"눈금을 바꿔 보며 그래프 왜곡 체험하기",el:["T","L"],
+ tip:"같은 자료로 세로축을 바꿔 보면 그래프가 얼마나 달라 보이는지 직접 느껴요.",
+ how:["같은 자료로 세로축을 0부터 / 50부터 시작하는 그래프 두 개를 만듭니다.","두 그래프를 보고 ‘어느 쪽이 더 큰 차이처럼 보이는가’를 말합니다.","왜곡을 막는 기준을 학급 약속으로 정합니다."],
+ say:"“같은 숫자인데 왜 다르게 보일까요? 만든 사람이 무엇을 보여 주고 싶었을까요?”",
+ ex:"뉴스에서 본 ‘폭발적으로 증가’ 그래프의 세로축을 찾아 0부터 다시 그려 봅니다.",
+ ev:"비교 그래프, 학급 약속"},
+r_peer:{t:"모둠 간 피드백 카드: 별 하나, 질문 하나",el:["E","L"],
+ tip:"칭찬만 오가지 않도록 ‘별(좋은 점)’과 ‘질문’을 꼭 하나씩 쓰게 하세요.",
+ how:["다른 모둠의 결과를 돌아보며 카드를 씁니다.","카드: 별 1개(근거 포함) + 질문 1개.","받은 질문에 답하면서 결과물을 고칩니다."],
+ say:"“좋은 점은 ‘어디가 어떻게 좋았는지’까지 써 주세요.”",
+ ex:"‘눈금이 0부터 시작해서 믿음이 갔어요. 표본은 몇 명이에요?’",
+ ev:"피드백 카드와 수정 기록"},
+r_cocreate:{t:"학생과 함께 평가기준 만들기",el:["E","L"],
+ tip:"기준을 같이 만들면 학생이 목표를 알고 스스로 점검하게 돼요.",
+ how:["좋은 결과물과 부족한 결과물 예시를 두 개 보여 줍니다.","‘무엇이 다른가?’를 모둠이 3가지 찾습니다.","찾은 것을 모아 반 평가기준 3줄로 정리합니다."],
+ say:"“이 둘의 어떤 점이 다른가요? 우리는 어디를 더 중요하게 볼까요?”",
+ ex:"‘이유가 있다 / 근거 자료가 있다 / 한계를 말한다’를 기준으로 정하고 자기평가에 씁니다.",
+ ev:"학급 평가기준, 자기평가"},
+r_prompt:{t:"질문(프롬프트) 쓰는 연습: 좋은 질문과 모호한 질문 비교",el:["L","T"],
+ tip:"AI에게 어떻게 묻느냐가 결과를 바꿔요. 질문을 고쳐 보는 활동이 사고 연습이 됩니다.",
+ how:["모호한 질문과 구체적인 질문 예시를 나란히 보여 줍니다.","같은 주제로 질문을 두 번 써서 결과를 비교합니다.","어떤 질문이 좋았는지 기준(대상·목적·형식)을 정리합니다."],
+ say:"“누구에게, 무엇을, 어떤 모양으로 알려 달라고 했나요?”",
+ ex:"‘그래프 알려 줘’ 대신 ‘6학년이 이해할 수 있게 띠그래프와 원그래프 차이를 예시로 설명해 줘’로 바꿔 비교합니다.",
+ ev:"질문 두 개와 결과 비교"},
+r_verify:{t:"AI 답 사실 확인 3단계",el:["T","L"],
+ tip:"AI 답은 그럴듯해도 틀릴 수 있어요. 확인 절차를 습관으로 만드세요.",
+ how:["① 출처가 있는가? ② 다른 자료와 같은가? ③ 상식과 맞는가? 세 칸을 활동지에 둡니다.","AI 답에서 숫자나 사실 하나를 골라 두 번째 자료로 확인합니다.","맞았는지 틀렸는지와 확인한 방법을 기록합니다."],
+ say:"“이 말이 맞는지 어떻게 알 수 있을까요? 다른 자료에서도 똑같이 말하나요?”",
+ ex:"AI가 알려 준 ‘2023년 출생아 수’를 통계청 자료와 비교해 보고 차이를 기록합니다.",
+ ev:"사실 확인 기록"},
+r_cross:{t:"교과 개념과 데이터 활동을 잇는 연결 문장",el:["G","A"],
+ tip:"데이터 활동이 교과와 따로 놀지 않도록, 이 자료가 교과 개념을 어떻게 보여 주는지 한 문장으로 연결하세요.",
+ how:["단원의 핵심 개념을 적습니다. 예: 인구 구조의 변화.","활동에서 쓰는 자료가 그 개념을 어떻게 보여 주는지 한 문장으로 씁니다.","수업 마무리에 같은 문장을 학생이 완성합니다."],
+ say:"“오늘 본 그래프가 우리가 배우는 개념의 어떤 부분을 보여 주나요?”",
+ ex:"‘출생아 수 그래프는 인구 구조가 달라지는 모습을 보여 준다.’",
+ ev:"연결 문장"},
+r_pre:{t:"수업 전 한 문항 진단으로 수준 파악하기",el:["S","E"],
+ tip:"선수 개념이 있는지 한 문항으로 확인하면 수준별 지원을 정할 수 있어요.",
+ how:["핵심 개념(비율, 그래프 읽기) 확인용 한 문항을 만듭니다.","정답률로 모둠을 나누거나 도움 자료를 준비합니다.","수업 뒤 같은 문항을 한 번 더 풀어 변화를 봅니다."],
+ say:"“아는 만큼만 풀어 볼까요? 점수에는 넣지 않아요.”",
+ ex:"‘전체 20명 중 5명은 몇 %일까요?’ 문항으로 비율 개념을 확인합니다.",
+ ev:"진단 결과, 사후 문항"},
+r_homework:{t:"수집은 사전 과제로, 수업은 분석·해석에",el:["S","A"],
+ tip:"모으는 시간을 수업 밖으로 옮기면 수업은 해석에 쓸 수 있어요.",
+ how:["수업 전에 설문 링크나 자료 수집 과제를 안내합니다.","수업 시작 때 모인 자료를 한 화면에 보여 줍니다.","응답이 적을 때를 대비한 예비 자료를 준비합니다."],
+ say:"“오늘은 이미 모인 자료를 가지고 시작할 거예요.”",
+ ex:"전날 클래스룸에 설문을 올려 두고 수업에서는 결과 그래프를 보며 해석합니다.",
+ ev:"수집 자료, 응답 수"},
+r_exit:{t:"수업 끝 1분 점검: 오늘 배운 것 한 문장",el:["G","E"],
+ tip:"수업이 끝날 때 한 문장을 쓰면 목표 달성을 바로 확인할 수 있어요.",
+ how:["마지막 3분에 ‘오늘 배운 것 한 문장’과 ‘아직 모르겠는 것 한 가지’를 쓰게 합니다.","교사가 훑어보며 많이 나온 어려움을 메모합니다.","다음 수업 첫 5분에 보충합니다."],
+ say:"“오늘 목표를 내 말로 한 문장으로 말해 볼까요?”",
+ ex:"‘띠그래프에서 비율을 읽고 이유를 설명할 수 있다. 눈금 확인은 아직 헷갈린다.’",
+ ev:"한 문장 점검 카드"},
+r_model:{t:"교사 시범: 생각을 소리 내어 해석해 보이기",el:["S","A"],
+ tip:"학생이 해석을 어려워한다면, 교사가 한 번 생각 과정을 소리 내어 보여 주세요.",
+ how:["그래프 하나를 보며 ‘먼저 제목을 보고, 축을 보고, 가장 큰 값을 찾고, 이유를 상상해 본다’를 말하며 보입니다.","같은 순서의 틀을 학생이 따라 쓰게 합니다.","다음에는 학생이 시범을 보입니다."],
+ say:"“선생님은 이렇게 생각했어요. 여러분도 같은 순서로 해 볼까요?”",
+ ex:"원그래프 앞에서 ‘이 부분이 가장 크네. 왜일까? 우리 반 설문 대상이 6학년이어서 그런가?’ 하고 말해 보입니다.",
+ ev:"학생의 해석 순서 메모"}
+};
+
+/* 갈래: 큰 막힘 → 구체 상황 → 이유 */
+const AREAS = [
+{id:"goal",t:"수업 목표·성취기준",d:"무엇을 배우게 할지 흐릿해요",el:["G"],sits:[
+ {t:"도구·활동이 목표처럼 되어버렸다",rx:["r_goal1","r_hook"],cs:[
+  {t:"활동이 재미있어서 목표를 놓쳤다",rx:["r_align","r_hook"]},
+  {t:"목표 자체가 모호했다",rx:["r_goal1","r_standard"]},
+  {t:"AI를 꼭 넣어야 한다는 부담이 있었다",rx:["r_need","r_goal1"]},
+  {t:"도구 시연에 시간을 많이 썼다",rx:["r_simple","r_time"]}]},
+ {t:"성취기준과 활동이 잘 안 맞는다",rx:["r_standard","r_align"],cs:[
+  {t:"성취기준을 자세히 분석하지 못했다",rx:["r_standard","r_goal1"]},
+  {t:"단원 시수에 맞추다 보니 활동이 줄었다",rx:["r_time","r_align"]},
+  {t:"데이터 활동이 교과 내용과 따로 놀았다",rx:["r_cross","r_hook"]},
+  {t:"여러 교과를 융합하다 보니 초점이 흩어졌다",rx:["r_standard","r_exit"]}]},
+ {t:"AI·디지털 기술이 왜 필요한지 설명하기 어렵다",rx:["r_need","r_roles"],cs:[
+  {t:"더 단순한 도구로도 가능했다",rx:["r_need","r_simple"]},
+  {t:"AI 활동이 이벤트처럼 붙어 있었다",rx:["r_align","r_need"]},
+  {t:"동료·관리자에게 필요성을 설명하기 어렵다",rx:["r_need","r_exemplar"]},
+  {t:"연수에서 배운 도구를 일단 써 보았다",rx:["r_need","r_hook"]}]},
+ {t:"수업이 끝났는데 목표를 달성했는지 확인하기 어렵다",rx:["r_exit","r_rubric"],cs:[
+  {t:"학생이 배운 것을 말로 정리하는 시간이 없었다",rx:["r_exit","r_reflect"]},
+  {t:"목표가 확인할 수 있는 행동으로 쓰여 있지 않았다",rx:["r_goal1","r_rubric"]},
+  {t:"평가 방법이 목표와 달랐다",rx:["r_align","r_rubric"]},
+  {t:"시간이 없어 마무리를 생략했다",rx:["r_exit","r_time"]}]},
+ {t:"탐구 질문·문제 상황이 학생과 거리가 멀다",rx:["r_hook","r_question"],cs:[
+  {t:"교사가 정한 질문이었다",rx:["r_question","r_hook"]},
+  {t:"학생 경험과 연결되지 않았다",rx:["r_hook","r_cross"]},
+  {t:"질문이 너무 커서 자료로 답하기 어려웠다",rx:["r_question","r_standard"]},
+  {t:"자료는 있는데 질문이 없었다",rx:["r_question","r_hook"]}]}]},
+{id:"act",t:"학생 활동 설계",d:"학생이 스스로 생각하는 구간이 약해요",el:["A","L"],sits:[
+ {t:"학생이 AI·도구 결과를 그대로 썼다",rx:["r_revise","r_self"],cs:[
+  {t:"도구를 쓰기 전에 내 생각을 쓸 기회가 없었다",rx:["r_self","r_guess"]},
+  {t:"결과를 비교하고 고르는 단계가 없었다",rx:["r_compare","r_ailog"]},
+  {t:"고쳐 쓰라는 안내가 없었다",rx:["r_revise","r_frame"]},
+  {t:"결과가 그럴듯해서 의심하지 않았다",rx:["r_verify","r_check"]},
+  {t:"시간이 모자라 복사해서 냈다",rx:["r_revise","r_time"]}]},
+ {t:"주제·항목을 교사가 정했거나 흥미 위주로 골랐다",rx:["r_reason","r_hook"],cs:[
+  {t:"시간이 부족해 교사가 정했다",rx:["r_reason","r_time"]},
+  {t:"학생이 고르는 기준을 몰랐다",rx:["r_reason","r_graphchoice"]},
+  {t:"모둠 안에서 합의가 안 됐다",rx:["r_team","r_reason"]},
+  {t:"학생이 질문 만드는 법을 몰랐다",rx:["r_question","r_reason"]}]},
+ {t:"해석·설명이 얕고 수치만 나열했다",rx:["r_interpret","r_frame"],cs:[
+  {t:"해석 질문이 없었다",rx:["r_interpret","r_frame"]},
+  {t:"그래프 만들기에 시간을 다 썼다",rx:["r_roles","r_interpret"]},
+  {t:"해석 글쓰기 틀이 없었다",rx:["r_frame","r_guess"]},
+  {t:"해석하는 모범을 본 적이 없다",rx:["r_model","r_frame"]},
+  {t:"그래프 읽는 법을 잘 몰랐다",rx:["r_model","r_terms"]}]},
+ {t:"자료를 모으고 정리하는 과정이 어려웠다",rx:["r_cleaning","r_homework"],cs:[
+  {t:"빈칸·오타·이상한 값이 섞였다",rx:["r_cleaning","r_pair"]},
+  {t:"어떤 자료를 모아야 하는지 몰랐다",rx:["r_question","r_reason"]},
+  {t:"수집에 시간이 너무 오래 걸렸다",rx:["r_homework","r_time"]},
+  {t:"자료 형식이 제각각이었다",rx:["r_cleaning","r_simple"]}]},
+ {t:"그래프·분석 방법을 고르기 어려웠다",rx:["r_graphchoice","r_compare"],cs:[
+  {t:"그래프 종류별 쓰임을 몰랐다",rx:["r_graphchoice","r_terms"]},
+  {t:"도구가 알아서 정해 줬다",rx:["r_compare","r_roles"]},
+  {t:"목적 없이 예쁜 것을 골랐다",rx:["r_graphchoice","r_reason"]},
+  {t:"여러 방법을 비교할 시간이 없었다",rx:["r_compare","r_time"]}]},
+ {t:"학생 수준 차이로 고르게 돌아가지 않았다",rx:["r_level"],cs:[
+  {t:"도구 숙련도 차이가 컸다",rx:["r_level","r_simple"]},
+  {t:"통계 용어·개념 이해 차이가 컸다",rx:["r_terms","r_level"]},
+  {t:"빨리 끝낸 학생이 기다렸다",rx:["r_level","r_compare"]},
+  {t:"선수 개념이 부족한 학생이 있었다",rx:["r_pre","r_terms"]}]},
+ {t:"모둠 활동에서 참여가 고르지 않았다",rx:["r_team"],cs:[
+  {t:"한 명이 도맡아 했다",rx:["r_team","r_device"]},
+  {t:"의견이 부딪혀 진행이 안 됐다",rx:["r_team","r_reason"]},
+  {t:"역할이 없어서 구경하는 학생이 있었다",rx:["r_team","r_device"]},
+  {t:"개인이 책임질 부분이 없었다",rx:["r_team","r_reflect"]}]}]},
+{id:"tech",t:"AI·디지털 도구의 역할",d:"도구와 학생의 역할이 섞여 있어요",el:["T"],sits:[
+ {t:"AI가 학생의 사고를 대신한 것 같다",rx:["r_roles","r_self"],cs:[
+  {t:"결과가 자동으로 나와 과정이 보이지 않았다",rx:["r_ailog","r_self"]},
+  {t:"도구와 학생의 역할을 나누지 않았다",rx:["r_roles","r_check"]},
+  {t:"학생이 질문을 쓰지 않고 버튼만 눌렀다",rx:["r_prompt","r_self"]},
+  {t:"교사가 시범을 너무 많이 보였다",rx:["r_self","r_model"]}]},
+ {t:"도구가 어렵거나 복잡했다",rx:["r_simple"],cs:[
+  {t:"기능이 많아 설정이 복잡했다",rx:["r_simple","r_need"]},
+  {t:"사용법 익히는 데 시간을 너무 썼다",rx:["r_simple","r_time"]},
+  {t:"계정·기기 환경이 학생마다 달랐다",rx:["r_prep","r_simple"]},
+  {t:"교사 자신이 도구에 익숙하지 않았다",rx:["r_simple","r_exemplar"]}]},
+ {t:"결과(그래프·예측·검색량)가 맞는지 확인하기 어려웠다",rx:["r_check","r_meaning"],cs:[
+  {t:"눈금·비율을 확인하지 않았다",rx:["r_check","r_roles"]},
+  {t:"예측값이 매번 달라 혼란스러웠다",rx:["r_predict","r_guess"]},
+  {t:"검색량 같은 상대값을 사실처럼 받아들였다",rx:["r_meaning","r_source"]},
+  {t:"표나 값이 일부만 보였다",rx:["r_check","r_pair"]},
+  {t:"AI 설명이 그럴듯해서 믿었다",rx:["r_verify","r_check"]}]},
+ {t:"AI 답이 틀리거나 이상했다",rx:["r_verify","r_check"],cs:[
+  {t:"출처가 없었다",rx:["r_verify","r_source"]},
+  {t:"최신 정보가 아니었다",rx:["r_verify","r_meaning"]},
+  {t:"질문이 모호해서 엉뚱한 답이 나왔다",rx:["r_prompt","r_verify"]},
+  {t:"학생이 틀린 줄 몰랐다",rx:["r_verify","r_pair"]}]},
+ {t:"어떤 도구를 골라야 할지 모르겠다",rx:["r_need","r_simple"],cs:[
+  {t:"도구가 너무 많아 고르기 어렵다",rx:["r_need","r_simple"]},
+  {t:"학생 수준에 맞는지 모르겠다",rx:["r_simple","r_level"]},
+  {t:"학교에서 쓸 수 있는 도구가 제한적이다",rx:["r_prep","r_simple"]},
+  {t:"가격·계정 문제가 있다",rx:["r_prep","r_notice"]}]},
+ {t:"도구를 써도 학생 결과가 비슷비슷하다",rx:["r_compare","r_self"],cs:[
+  {t:"모두 같은 질문을 입력했다",rx:["r_prompt","r_compare"]},
+  {t:"초안 없이 도구부터 열었다",rx:["r_self","r_guess"]},
+  {t:"선택지를 주지 않았다",rx:["r_compare","r_revise"]},
+  {t:"결과를 고쳐 쓰지 않았다",rx:["r_revise","r_ailog"]}]}]},
+{id:"eval",t:"평가·학습의 증거",d:"무엇을 근거로 평가할지 막막해요",el:["E"],sits:[
+ {t:"결과물 중심으로 평가했다",rx:["r_rubric","r_evidence2"],cs:[
+  {t:"어떤 과정 증거를 남길지 몰랐다",rx:["r_evidence2","r_ailog"]},
+  {t:"평가 시간이 부족했다",rx:["r_light","r_oral"]},
+  {t:"평가기준이 상·중·하 결과 수준뿐이었다",rx:["r_rubric","r_evidence2"]},
+  {t:"결과물이 좋으면 점수가 높았다",rx:["r_rubric","r_oral"]},
+  {t:"학부모·관리자가 결과물을 기대한다",rx:["r_rubric","r_cocreate"]}]},
+ {t:"학생이 한 것과 AI가 한 것이 구분되지 않는다",rx:["r_ailog","r_oral"],cs:[
+  {t:"AI 사용 기록을 남기지 않았다",rx:["r_ailog","r_reflect"]},
+  {t:"말이나 글로 설명하게 하는 장치가 없었다",rx:["r_oral","r_reflect"]},
+  {t:"학생 결과가 모두 비슷했다",rx:["r_oral","r_compare"]},
+  {t:"집에서 한 과제가 많았다",rx:["r_oral","r_exit"]}]},
+ {t:"증거는 모았는데 활용하기 어렵다",rx:["r_light"],cs:[
+  {t:"양이 많아 정리하지 못했다",rx:["r_light","r_evidence2"]},
+  {t:"피드백으로 이어지지 않았다",rx:["r_light","r_reflect"]},
+  {t:"증거가 여러 도구에 흩어져 있다",rx:["r_evidence2","r_light"]},
+  {t:"기준이 없어 해석하기 어렵다",rx:["r_rubric","r_cocreate"]}]},
+ {t:"학생이 평가기준을 잘 모른다",rx:["r_cocreate","r_rubric"],cs:[
+  {t:"기준을 처음에만 안내했다",rx:["r_cocreate","r_exit"]},
+  {t:"기준 문장이 어려웠다",rx:["r_rubric","r_cocreate"]},
+  {t:"학생이 평가에 참여할 기회가 없었다",rx:["r_cocreate","r_peer"]},
+  {t:"자기평가가 형식적이었다",rx:["r_reflect","r_peer"]}]},
+ {t:"동료평가·자기평가를 어떻게 넣을지 모르겠다",rx:["r_peer","r_reflect"],cs:[
+  {t:"칭찬만 오갔다",rx:["r_peer","r_frame"]},
+  {t:"시간이 없었다",rx:["r_peer","r_time"]},
+  {t:"기준이 없었다",rx:["r_peer","r_cocreate"]},
+  {t:"서로 비교되는 것을 부담스러워한다",rx:["r_peer","r_reflect"]}]},
+ {t:"AI 활용 과정을 평가에 넣어도 되는지 고민된다",rx:["r_ailog","r_rubric"],cs:[
+  {t:"AI를 많이 쓸수록 점수가 오를까 걱정된다",rx:["r_rubric","r_ailog"]},
+  {t:"AI 활용 자체를 평가하는 건 아닌지 고민된다",rx:["r_align","r_rubric"]},
+  {t:"쓰지 않은 학생과 형평성이 걱정된다",rx:["r_ailog","r_notice"]},
+  {t:"기록하는 방법을 모르겠다",rx:["r_ailog","r_evidence2"]}]}]},
+{id:"ethic",t:"정확성·윤리",d:"자료의 믿음직함과 안전이 걱정돼요",el:["S"],sits:[
+ {t:"설문·자료의 개인정보·표본·출처를 점검하지 않았다",rx:["r_ethics","r_source"],cs:[
+  {t:"설문 문항을 점검하는 단계가 없었다",rx:["r_ethics","r_notice"]},
+  {t:"표본이 치우친다는 개념을 가르치기 어려웠다",rx:["r_sample","r_terms"]},
+  {t:"출처를 표기하는 습관이 없었다",rx:["r_source","r_ailog"]},
+  {t:"응답자 수가 너무 적었다",rx:["r_sample","r_ethics"]},
+  {t:"이름·사진이 그대로 드러났다",rx:["r_ethics","r_notice"]}]},
+ {t:"그래프·예측을 사실처럼 단정했다",rx:["r_check","r_meaning"],cs:[
+  {t:"그래프 눈금이 왜곡될 수 있다는 점을 놓쳤다",rx:["r_distort","r_check"]},
+  {t:"예측을 확정된 미래로 받아들였다",rx:["r_predict","r_meaning"]},
+  {t:"상관을 원인으로 해석했다",rx:["r_meaning","r_interpret"]},
+  {t:"일부만 보여 주는 그래프를 믿었다",rx:["r_distort","r_compare"]}]},
+ {t:"AI 의존·저작권·학부모 안내가 걱정된다",rx:["r_notice","r_self"],cs:[
+  {t:"학생이 AI에 의존할까 걱정된다",rx:["r_self","r_ailog"]},
+  {t:"저작권·출처 표기가 걱정된다",rx:["r_source","r_notice"]},
+  {t:"학부모 안내·동의가 걱정된다",rx:["r_notice","r_source"]},
+  {t:"학교 정책이 불분명하다",rx:["r_notice","r_exemplar"]}]},
+ {t:"편향·고정관념이 담긴 결과가 나왔다",rx:["r_verify","r_reflect"],cs:[
+  {t:"AI 결과가 한쪽으로 치우쳤다",rx:["r_verify","r_compare"]},
+  {t:"설문 대상이 특정 집단에 한정되었다",rx:["r_sample","r_ethics"]},
+  {t:"그래프 제목이 단정적이었다",rx:["r_distort","r_frame"]},
+  {t:"이를 토의할 시간이 없었다",rx:["r_reflect","r_time"]}]},
+ {t:"학생 정보·사진을 도구에 넣어도 되는지 불안하다",rx:["r_ethics","r_notice"],cs:[
+  {t:"이름·얼굴이 그대로 입력되었다",rx:["r_ethics","r_notice"]},
+  {t:"무료 도구 약관을 확인하지 않았다",rx:["r_notice","r_prep"]},
+  {t:"학생이 개인 계정을 썼다",rx:["r_notice","r_prep"]},
+  {t:"동의 절차를 몰랐다",rx:["r_notice","r_exemplar"]}]}]},
+{id:"real",t:"실행·시간·환경",d:"교실 현실에서 돌아가기 어려워요",el:["S"],sits:[
+ {t:"시간이 부족했다",rx:["r_time"],cs:[
+  {t:"수집·분석·해석 시간을 나누지 않았다",rx:["r_time","r_device"]},
+  {t:"여러 차시로 쪼개져 흐름이 끊겼다",rx:["r_time","r_align"]},
+  {t:"수집이 오래 걸렸다",rx:["r_homework","r_time"]},
+  {t:"도구 설명에 시간을 많이 썼다",rx:["r_simple","r_time"]},
+  {t:"정리·발표 시간이 없었다",rx:["r_exit","r_time"]}]},
+ {t:"기기·접속에 문제가 있었다",rx:["r_prep"],cs:[
+  {t:"기기가 모자랐다",rx:["r_device","r_team"]},
+  {t:"접속·로그인이 막혔다",rx:["r_prep","r_simple"]},
+  {t:"학교 네트워크가 느렸다",rx:["r_prep","r_homework"]},
+  {t:"학생 기기가 서로 달랐다",rx:["r_prep","r_device"]}]},
+ {t:"다른 교사가 따라 하기 어려운 수업이다",rx:["r_exemplar"],cs:[
+  {t:"자료가 정리되어 있지 않았다",rx:["r_exemplar","r_align"]},
+  {t:"교사의 도구 숙련이 많이 필요했다",rx:["r_simple","r_exemplar"]},
+  {t:"내 수업 맥락에 너무 맞춰져 있었다",rx:["r_exemplar","r_cross"]},
+  {t:"설명 문서가 없었다",rx:["r_exemplar","r_align"]}]},
+ {t:"학생 통제·수업 운영이 어려웠다",rx:["r_device","r_team"],cs:[
+  {t:"딴짓하는 학생이 있었다",rx:["r_device","r_team"]},
+  {t:"학생마다 속도가 달라 질문이 몰렸다",rx:["r_level","r_pre"]},
+  {t:"화면만 보고 대화가 없었다",rx:["r_team","r_interpret"]},
+  {t:"기기 사용 규칙이 없었다",rx:["r_device","r_prep"]}]},
+ {t:"처음 시도라 막막하다",rx:["r_exemplar","r_simple"],cs:[
+  {t:"어디서부터 시작할지 모르겠다",rx:["r_hook","r_exemplar"]},
+  {t:"실패할까 걱정이다",rx:["r_prep","r_time"]},
+  {t:"동료와 의논할 곳이 없다",rx:["r_exemplar","r_peer"]},
+  {t:"학교 지원이 부족하다",rx:["r_exemplar","r_notice"]}]}]},
+{id:"unsure",t:"잘 모르겠어요",d:"장면으로 찾아볼게요",el:[],sits:[
+ {t:"학생이 결과를 받아 적기만 한 장면이 있었다",rx:["r_self","r_interpret"],cs:[]},
+ {t:"활동은 잘 됐는데 무엇을 배웠는지 말하기 어렵다",rx:["r_evidence2","r_oral"],cs:[]},
+ {t:"도구 사용법 설명으로 시간이 다 갔다",rx:["r_simple","r_time"],cs:[]},
+ {t:"재미있었는데 목표와 연결이 약했다",rx:["r_align","r_standard"],cs:[]},
+ {t:"학생들이 비슷비슷한 결과를 냈다",rx:["r_self","r_compare"],cs:[]},
+ {t:"학생이 스스로 질문하는 장면이 없었다",rx:["r_question","r_hook"],cs:[]},
+ {t:"평가를 어떻게 해야 할지 막막하다",rx:["r_rubric","r_evidence2"],cs:[]},
+ {t:"기기·접속이 걱정되어 시작하기 어렵다",rx:["r_prep","r_device"],cs:[]}]}
+];
+
+/* 함께 해당하는 상황(복수 선택) */
+const SCENES = [
+ {t:"AI 결과를 비교 없이 첫 번째 것으로 골랐다",rx:["r_compare"]},
+ {t:"모둠에서 한 명만 활동했다",rx:["r_team"]},
+ {t:"결과가 예상과 다를 때 대처하지 못했다",rx:["r_guess","r_predict"]},
+ {t:"자료 출처를 밝히지 않았다",rx:["r_source"]},
+ {t:"교사가 학생의 도구 활용 과정을 볼 수 없었다",rx:["r_ailog"]},
+ {t:"학생이 자기 활동을 돌아볼 시간이 없었다",rx:["r_reflect"]},
+ {t:"통계 용어가 어려워 막혔다",rx:["r_terms"]},
+ {t:"설문 문항이 걱정되었다",rx:["r_ethics"]},
+ {t:"계정·접속 문제가 있었다",rx:["r_prep"]},
+ {t:"빨리 끝낸 학생의 후속 활동이 없었다",rx:["r_level"]},
+ {t:"평가기준이 결과 수준만 있었다",rx:["r_rubric"]},
+ {t:"AI 활용 사실 안내가 부족했다",rx:["r_notice"]},
+ {t:"그래프 눈금·합계를 확인하지 않았다",rx:["r_check"]},
+ {t:"도구가 수업 목적을 이끈 듯하다",rx:["r_need"]},
+ {t:"AI 답이 맞는지 확인하지 않았다",rx:["r_verify"]},
+ {t:"학생이 좋은 질문을 만들지 못했다",rx:["r_question"]},
+ {t:"자료에 빈칸·이상한 값이 섞였다",rx:["r_cleaning"]},
+ {t:"그래프 종류를 목적 없이 골랐다",rx:["r_graphchoice"]},
+ {t:"표본 수가 너무 적었다",rx:["r_sample"]},
+ {t:"동료·모둠 간 피드백이 없었다",rx:["r_peer"]},
+ {t:"수업 끝에 정리가 없었다",rx:["r_exit"]},
+ {t:"수집 때문에 수업 시간이 부족했다",rx:["r_homework"]}
+];
+
+const app = document.getElementById("app");
+const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", lesson:"", stack:[], docState:""};
+
+function go(next){ st.stack.push(st.step); st.step = next; render(); window.scrollTo({top:0}); }
+function back(){ if(!st.stack.length) return; st.step = st.stack.pop(); render(); window.scrollTo({top:0}); }
+function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",stack:[],docState:""}); render(); window.scrollTo({top:0}); }
+
+const KO = ["가","나","다","라","마","바","사","아","자","차","카","타","파","하","거","너","더","러","머","버"];
+const LV = {now:"바로 가능", class:"수업 중 적용", prep:"준비 필요"};
+const LVMAP = {
+ r_interpret:"now", r_guess:"now", r_reason:"now", r_roles:"class", r_check:"now", r_meaning:"class", r_predict:"class",
+ r_rubric:"prep", r_evidence2:"now", r_ailog:"now", r_oral:"class", r_standard:"prep", r_need:"prep", r_align:"prep",
+ r_goal1:"now", r_hook:"class", r_ethics:"prep", r_source:"now", r_time:"prep", r_prep:"prep", r_device:"class", r_level:"prep",
+ r_frame:"now", r_compare:"class", r_self:"now", r_revise:"class", r_reflect:"now", r_terms:"prep", r_simple:"prep", r_light:"now",
+ r_notice:"now", r_team:"class", r_exemplar:"prep", r_pair:"class", r_question:"class", r_cleaning:"class", r_graphchoice:"prep",
+ r_sample:"now", r_distort:"class", r_peer:"class", r_cocreate:"prep", r_prompt:"class", r_verify:"class", r_cross:"now",
+ r_pre:"prep", r_homework:"prep", r_exit:"now", r_model:"class"
+};
+const lvOf = id => LVMAP[id] || "class";
+const STEPS = ["intro","area","sit","cause","scenes","result","board"];
+function today(){ const d=new Date(); return d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate(); }
+function attr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+function qprog(){
+  const idx = STEPS.indexOf(st.step);
+  return `<div class="qprog" aria-hidden="true">${STEPS.map((_,i)=>`<i class="${i<=idx?"on":""}"></i>`).join("")}</div>`;
+}
+function slip(label, inner){
+  return `<section class="slip"><div class="slip-head"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">${label}</span>${qprog()}</div></div><div class="body">${inner}</div></section>`;
+}
+function crumbs(){
+  const a = st.area!==null? AREAS[st.area]:null; const parts = [];
+  if(a) parts.push(a.t);
+  if(a && st.sit!==null) parts.push(a.sits[st.sit].t);
+  return parts.length? `<div class="crumbs">${parts.map(p=>`<span class="crumb">${p}</span>`).join("")}</div>`:"";
+}
+function backBtn(){ return st.stack.length? `<button class="btn" data-act="back">이전</button>`:""; }
+function opts(items, act, pressedFn){
+  return `<div class="opts">${items.map((x,i)=>`<button class="opt" data-act="${act}" data-i="${i}"${pressedFn?` aria-pressed="${pressedFn(i)}"`:""}><span class="k">${KO[i]||i+1}</span><span>${x.t}${x.d?`<small>${x.d}</small>`:""}</span></button>`).join("")}</div>`;
+}
+
+function render(){
+  const a = st.area!==null? AREAS[st.area]:null;
+  if(st.step==="intro"){
+    app.innerHTML = slip("모듈 4 · 3차시 Re-design 준비", `
+      <h1>Re-design 길잡이</h1>
+      <p class="lead">내 수업에서 막힌 곳을 고르며 따라가면, 먼저 손볼 요소와 그에 맞는 처방이 나와요. 질문은 모두 선택지이고 정답은 없습니다. 답에 따라 다음 질문이 달라지고, 고른 답이 섞여서 결과가 나옵니다.</p>
+      <label class="field" for="lesson">내 수업을 한 줄로 적어 주세요 (선택)
+        <input type="text" id="lesson" value="${attr(st.lesson)}" placeholder="예: 6학년 수학 여러 가지 그래프, 웹앱으로 그래프 만들고 기사문 쓰기">
+      </label>
+      <div class="row"><button class="btn primary" data-act="start">처방 받으러 가기</button><button class="btn" data-act="board" id="boardBtn"${SCRIPT_URL?"":" hidden"}>연수실 결과표 보기</button></div>
+      <p class="hint">입력한 내용은 이 화면에서만 쓰이고 서버로 보내지 않습니다.</p>`);
+    return;
+  }
+  if(st.step==="area"){
+    app.innerHTML = slip("질문 1 / 4", `
+      <h2>내 수업에서 가장 막히는 곳은 어디인가요?</h2>
+      ${opts(AREAS.map(x=>({t:x.t,d:x.d})),"area")}
+      <div class="row">${backBtn()}</div>`);
+    return;
+  }
+  if(st.step==="sit"){
+    app.innerHTML = slip("질문 2 / 4", `
+      ${crumbs()}
+      <h2>${a.id==="unsure"?"가장 가깝게 느껴지는 장면은 무엇인가요?":"그중에서 어떤 상황에 가장 가깝나요?"}</h2>
+      ${opts(a.sits,"sit")}
+      <div class="row">${backBtn()}</div>`);
+    return;
+  }
+  if(st.step==="cause"){
+    const s = a.sits[st.sit];
+    app.innerHTML = slip("질문 3 / 4", `
+      ${crumbs()}
+      <h2>왜 그렇게 되었다고 생각하세요?</h2>
+      ${opts(s.cs,"cause")}
+      <div class="row">${backBtn()}</div>`);
+    return;
+  }
+  if(st.step==="scenes"){
+    app.innerHTML = slip("질문 4 / 4 · 여러 개 선택", `
+      ${crumbs()}
+      <h2>그 밖에 겪은 일이 있으면 모두 골라 주세요</h2>
+      <p class="lead">고른 만큼 처방이 더 섞여 나옵니다. 없으면 바로 결과를 보세요.</p>
+      ${opts(SCENES,"scene",i=>st.scenes.has(i))}
+      <div class="row">${backBtn()}<button class="btn primary" data-act="result">처방전 받기</button></div>`);
+    return;
+  }
+  if(st.step==="result") renderResult();
+  if(st.step==="board") renderBoard();
+}
+
+function compute(){
+  const a = AREAS[st.area];
+  const elScore = {G:0,A:0,T:0,L:0,S:0,E:0};
+  const rx = {}; let order = 0;
+  function add(id,w,src){
+    if(!rx[id]) rx[id] = {id,score:0,src:src,srcW:0,order:order++};
+    rx[id].score += w;
+    if(w>rx[id].srcW){ rx[id].src = src; rx[id].srcW = w; }
+    RX[id].el.forEach(e=>{ elScore[e]+=w; });
+  }
+  a.el.forEach(e=>{ elScore[e]+=2; });
+  const sit = a.sits[st.sit];
+  sit.rx.forEach(id=>add(id,2,sit.t));
+  if(st.cause!==null){ const c = sit.cs[st.cause]; c.rx.forEach(id=>add(id,3,c.t)); }
+  st.scenes.forEach(i=>{ SCENES[i].rx.forEach(id=>add(id,1,SCENES[i].t)); });
+  const list = Object.values(rx).sort((x,y)=>y.score-x.score||x.order-y.order).slice(0,7);
+  return {elScore,list,sit};
+}
+
+function renderResult(){
+  const {elScore,list,sit} = compute();
+  if(!st.init){ list.slice(0,3).forEach(r=>st.picked.add(r.id)); st.init=true; st.filter="all"; }
+  const max = Math.max(...ELKEYS.map(k=>elScore[k]),1);
+  const ranked = [...ELKEYS].sort((x,y)=>elScore[y]-elScore[x]);
+  const top2 = ranked.slice(0,2).filter(k=>elScore[k]>0);
+  const strips = ELKEYS.map(k=>{
+    const isTop = top2.includes(k); const pct = Math.round(elScore[k]/max*100);
+    return `<div class="strip ${isTop?"top":""}"><span>${EL[k]}</span><span class="t"><span style="width:${pct}%"></span></span><span class="f">${isTop?"먼저":""}</span></div>`;
+  }).join("");
+  const item = (r,n)=>{
+    const x = RX[r.id]; const on = st.picked.has(r.id); const lv = lvOf(r.id);
+    const hide = st.filter!=="all" && st.filter!==lv;
+    return `<article class="item ${on?"picked":""}" data-id="${r.id}" data-lv="${lv}"${hide?" hidden":""}>
+      <div class="ihead"><span class="rxn">${String(n).padStart(2,"0")}</span><h3>${x.t}</h3></div>
+      <div class="tags"><span class="lv ${lv}">${LV[lv]}</span><span class="elt">${x.el.map(e=>EL[e]).join(" · ")}</span></div>
+      <p>${x.tip}</p>
+      <details><summary>이렇게 해 보세요</summary>
+        <div class="det">
+          <div class="lab">해 볼 일</div>
+          <ol>${x.how.map(h=>`<li>${h}</li>`).join("")}</ol>
+          <div class="lab">이렇게 말해 보세요</div>
+          <p class="say">${x.say}</p>
+          <div class="lab">수업 예시</div>
+          <p class="exb">${x.ex}</p>
+          <div class="kv"><b>남길 증거</b> ${x.ev}</div>
+        </div>
+      </details>
+      <div class="why">고른 답: <b>${r.src}</b></div>
+      <div class="row"><button class="btn ${on?"primary":""}" data-act="pick" data-id="${r.id}" aria-pressed="${on}">${on?"담았어요":"내 재설계안에 담기"}</button></div>
+    </article>`;
+  };
+  const chips = [["all","전체"],["now","바로 가능"],["class","수업 중 적용"],["prep","준비 필요"]]
+    .map(([k,l])=>`<button class="chipbtn" data-act="filter" data-f="${k}" aria-pressed="${st.filter===k}">${l}</button>`).join("");
+  app.innerHTML = `
+    <section class="slip">
+      <div class="slip-head big"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">Re-design 처방전</span><h2>먼저 손볼 요소와 처방</h2></div></div>
+      <div class="body">
+        <dl class="dx">
+          <dt>수업</dt><dd>${st.lesson.trim()?xesc(st.lesson.trim()):"(미입력)"}</dd>
+          <dt>막힌 곳</dt><dd>${AREAS[st.area].t} › ${sit.t}</dd>
+          <dt>날짜</dt><dd>${today()}</dd>
+        </dl>
+        <div class="strips" role="group" aria-label="요소별 점수">${strips}</div>
+        <p class="hint">진하게 표시된 두 요소부터 보세요. 고른 답에서 모인 점수입니다.</p>
+      </div>
+      <div class="secthead"><h3>처방 ${list.length}가지</h3><span class="hint">담은 처방은 아래 정리에 모입니다.</span></div>
+      <div class="filters" role="group" aria-label="난이도 거르기">${chips}</div>
+      ${list.map((r,i)=>item(r,i+1)).join("")}
+      <div class="sumbox" id="summary">
+        <h3>내 Re-design 정리</h3>
+        <p class="hint">아래 글은 직접 고쳐 쓸 수 있어요. 【 】 부분을 내 수업에 맞게 채운 뒤 저장하세요.</p>
+        <textarea id="out" aria-label="Re-design 정리" spellcheck="false"></textarea>
+        <div class="row">
+          <button class="btn primary" data-act="docx" id="docxBtn" hidden>구글 독스용 파일(.docx) 저장</button>
+          <button class="btn" data-act="copy">글 복사하기</button>
+          <span class="ok" id="msg" hidden></span>
+        </div>
+        <p class="hint" id="docsHelp" hidden>저장한 파일을 구글 드라이브에 올린 뒤, 파일을 열 때 ‘Google Docs로 열기’를 고르면 구글 독스 문서가 됩니다.
+          <a class="btn" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener">구글 드라이브 열기</a></p>
+        <p class="hint">다음 단계: 이 정리를 보고 AIEDAP 설계 사이트(aiedap.or.kr/ai-class/generator)에 입력하세요.</p>
+      </div>
+      <div class="sendbox" id="sendbox" hidden>
+        <h3>연수실에 내 선택 보내기</h3>
+        <p class="hint">이름은 받지 않고, 막힌 곳·고른 답·담은 처방만 익명으로 모아 ‘연수실 결과표’에 반영합니다. 다시 보내면 내 기록이 새로 바뀝니다.</p>
+        <div class="row"><button class="btn primary" data-act="send">익명으로 보내기</button><button class="btn" data-act="board">연수실 결과표 보기</button><span class="ok" id="msg2" hidden></span></div>
+      </div>
+      <div class="sig"><span>AIEDAP · 모듈 4</span><span>${today()}</span></div>
+    </section>
+    <div class="row">${backBtn()}<button class="btn" data-act="restart">처음부터 다시</button></div>`;
+  buildSummary();
+  setupDocx();
+  setupSend();
+}
+
+function buildSummary(){
+  const {list,sit} = compute();
+  const picked = list.filter(r=>st.picked.has(r.id));
+  const titles = picked.map(r=>RX[r.id].t);
+  let t = "";
+  if(st.lesson.trim()) t += "내 수업: "+st.lesson.trim()+"\n";
+  t += "막힌 곳: "+AREAS[st.area].t+" > "+sit.t+"\n\n";
+  t += "[한 문장 Re-design]\n";
+  t += "기존에는 【　　】한 수업이었지만, 학생이 【　　】할 수 있도록 "+(titles.length? titles.slice(0,2).join(", "):"【　　】")+"을(를) 중심으로 다시 설계하였습니다.\n\n";
+  if(picked.length){
+    t += "[담은 처방]\n";
+    picked.forEach((r,i)=>{
+      const x = RX[r.id];
+      t += (i+1)+". "+x.t+" ("+x.el.map(e=>EL[e]).join(", ")+" / "+LV[lvOf(r.id)]+")\n";
+      x.how.forEach(h=>{ t += "   - "+h+"\n"; });
+      t += "   이렇게 말해 보세요: "+x.say+"\n";
+      t += "   수업 예시: "+x.ex+"\n";
+      t += "   남길 증거: "+x.ev+"\n";
+    });
+  }
+  const ta = document.getElementById("out");
+  if(ta) ta.value = t;
+}
+
+
+/* ===== 연수실 결과표: 선택값만 익명으로 구글 시트에 모읍니다 ===== */
+/* 구글 Apps Script 웹앱 주소(끝이 /exec)를 아래 따옴표 안에 넣으세요. 비워 두면 결과표 기능이 꺼집니다. */
+const SCRIPT_URL = "";
+const board = {docs:[], ready:false, err:""};
+let uid = null;
+try{
+  uid = localStorage.getItem("rg_uid");
+  if(!uid){ uid = (window.crypto && crypto.randomUUID)? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)); localStorage.setItem("rg_uid", uid); }
+}catch(_){ uid = Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function validDoc(d){
+  return d && Number.isInteger(d.area) && d.area>=0 && d.area<AREAS.length
+    && Number.isInteger(d.sit) && d.sit>=0 && d.sit<AREAS[d.area].sits.length
+    && Array.isArray(d.picked) && Array.isArray(d.top);
+}
+async function loadBoard(){
+  if(!SCRIPT_URL) return;
+  try{
+    const r = await fetch(SCRIPT_URL+"?action=list", {redirect:"follow"});
+    const j = await r.json();
+    board.docs = (j.rows||[]).filter(validDoc); board.ready = true; board.err = "";
+  }catch(_){ board.err = "net"; }
+  if(st.step==="board") renderBoard();
+}
+function initShared(){
+  if(!SCRIPT_URL) return;
+  const b = document.getElementById("boardBtn"); if(b) b.hidden = false;
+  setupSend(); loadBoard();
+  setInterval(()=>{ if(st.step==="board") loadBoard(); }, 15000);
+}
+function topTwo(elScore){
+  return [...ELKEYS].sort((x,y)=>elScore[y]-elScore[x]).slice(0,2).filter(k=>elScore[k]>0);
+}
+function setupSend(){
+  const box = document.getElementById("sendbox"); if(box) box.hidden = !SCRIPT_URL;
+}
+async function sendMine(){
+  const {elScore} = compute();
+  const a = AREAS[st.area], sit = a.sits[st.sit];
+  const picked = [...st.picked].filter(id=>RX[id]), top = topTwo(elScore);
+  const doc = {id:uid, area:st.area, sit:st.sit, cause:st.cause===null?-1:st.cause, scenes:[...st.scenes], picked, top,
+    labels:{area:a.t, sit:sit.t, cause:st.cause===null?"":sit.cs[st.cause].t, picked:picked.map(id=>RX[id].t), top:top.map(k=>EL[k])}};
+  try{
+    const r = await fetch(SCRIPT_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(doc), redirect:"follow"});
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error||"fail");
+    flash("보냈어요. 연수실 결과표에서 확인해 보세요.","msg2");
+  }catch(_){
+    flash("보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.","msg2");
+  }
+}
+function brow(label,count,max,hot,extra){
+  const pct = max? Math.round(count/max*100):0;
+  return `<div class="brow ${hot?"hot":""}"><div class="l"><span>${label}</span>${extra||""}</div><div class="bt"><span class="tr"><span style="width:${pct}%"></span></span><span class="n">${count}명</span></div></div>`;
+}
+function renderBoard(){
+  const docs = board.docs, n = docs.length;
+  let inner = "";
+  if(board.err && !board.ready){
+    inner = `<p class="lead">결과표를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>`;
+  }else if(!board.ready){
+    inner = `<p class="lead">불러오는 중이에요…</p>`;
+  }else if(n===0){
+    inner = `<p class="lead">아직 보낸 선생님이 없어요. 길잡이를 끝까지 따라가서 ‘익명으로 보내기’를 누르면 여기에 쌓입니다.</p>`;
+  }else{
+    const areaC = AREAS.map(()=>0), sitC = {}, rxC = {}, elC = {}; ELKEYS.forEach(k=>elC[k]=0);
+    docs.forEach(d=>{
+      areaC[d.area]++;
+      const key = d.area+":"+d.sit; sitC[key] = (sitC[key]||0)+1;
+      new Set(d.picked).forEach(id=>{ if(RX[id]) rxC[id]=(rxC[id]||0)+1; });
+      new Set(d.top).forEach(k=>{ if(EL[k]) elC[k]++; });
+    });
+    const topArea = areaC.indexOf(Math.max(...areaC));
+    const sits = Object.entries(sitC).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const rxs = Object.entries(rxC).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const elMax = Math.max(...ELKEYS.map(k=>elC[k]),1), arMax = Math.max(...areaC,1);
+    const elOrder = [...ELKEYS].sort((x,y)=>elC[y]-elC[x]);
+    inner = `
+      <div class="bigline"><b>${n}</b><span>명이 보냈어요. 가장 많이 막힌 곳은 <strong>${AREAS[topArea].t}</strong>(${areaC[topArea]}명)입니다.</span></div>
+      <div class="bsec"><h3>막힌 영역</h3>${AREAS.map((a,i)=>brow(a.t,areaC[i],arMax,i===topArea&&areaC[i]>0)).join("")}</div>
+      <div class="bsec"><h3>함께 겪는 어려움 TOP ${sits.length}</h3>${sits.map(([k,c],i)=>{ const [a,si]=k.split(":").map(Number); return brow(AREAS[a].sits[si].t,c,sits[0][1],i===0,`${c>=2?'<span class="together">함께</span>':''}<small>${AREAS[a].t}</small>`); }).join("")}</div>
+      <div class="bsec"><h3>먼저 손볼 요소</h3>${elOrder.map((k,i)=>brow(EL[k],elC[k],elMax,i<2&&elC[k]>0)).join("")}</div>
+      <div class="bsec"><h3>많이 담은 처방 TOP ${rxs.length}</h3>${rxs.map(([id,c],i)=>brow(RX[id].t,c,rxs[0][1],i===0)).join("")}</div>`;
+  }
+  app.innerHTML = `<section class="slip"><div class="slip-head big"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">연수실 결과표 · 익명</span><h2>우리가 함께 막힌 곳</h2></div></div><div class="body">${inner}
+    <div class="row">${backBtn()}<button class="btn" data-act="refresh">새로고침</button><span class="ok" id="msg" hidden></span></div>
+    <p class="hint">이름 없이 선택값만 모입니다. 새로 보내는 선생님이 있으면 이 화면이 저절로 갱신돼요.</p></div></section>`;
+}
+/* .docx 만들기: 정리 글을 줄 단위로 읽어 제목·소제목·목록으로 바꿉니다. */
+function xesc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function para(text,opt){
+  opt = opt||{};
+  const ppr = (opt.style?`<w:pStyle w:val="${opt.style}"/>`:"")+(opt.left?`<w:ind w:left="${opt.left}" w:hanging="${opt.hang||0}"/>`:"");
+  const rpr = (opt.bold?"<w:b/>":"")+(opt.italic?"<w:i/>":"");
+  return `<w:p><w:pPr>${ppr}</w:pPr><w:r><w:rPr>${rpr}</w:rPr><w:t xml:space="preserve">${xesc(text)}</w:t></w:r></w:p>`;
+}
+function docxBody(text){
+  const out = [para("Re-design 정리",{style:"Title"})];
+  text.split("\n").forEach(line=>{
+    if(!line.trim()) return;
+    let m;
+    if((m=line.match(/^\[(.+)\]$/))) out.push(para(m[1],{style:"Heading2"}));
+    else if(/^\d+\. /.test(line)) out.push(para(line,{style:"Heading3"}));
+    else if((m=line.match(/^\s+- (.*)$/))) out.push(para("• "+m[1],{left:560,hang:240}));
+    else if((m=line.match(/^\s+(\S.*)$/))) out.push(para(m[1],{left:320}));
+    else if(/^(내 수업|막힌 곳):/.test(line)) out.push(para(line,{bold:true}));
+    else out.push(para(line));
+  });
+  return out.join("");
+}
+async function makeDocx(text){
+  const zip = new JSZip();
+  const put = (n,d)=>zip.file(n,d,{createFolders:false});
+  put("[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`);
+  put("_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`);
+  put("word/_rels/document.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+  const font = `<w:rFonts w:ascii="Malgun Gothic" w:hAnsi="Malgun Gothic" w:eastAsia="Malgun Gothic" w:cs="Malgun Gothic"/>`;
+  put("word/styles.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr>${font}<w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="ko-KR" w:eastAsia="ko-KR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="320" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="240"/></w:pPr><w:rPr><w:b/><w:sz w:val="40"/><w:szCs w:val="40"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="320" w:after="120"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="220" w:after="80"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:sz w:val="25"/><w:szCs w:val="25"/></w:rPr></w:style></w:styles>`);
+  put("word/document.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${docxBody(text)}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1304" w:bottom="1440" w:left="1304" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`);
+  return zip.generateAsync({type:"blob"});
+}
+
+async function saveFile(name, blob){
+  try{
+    const c = (window.claude && window.claude.use)? window.claude : null;
+    const ns = c? await c.use("downloads"):null;
+    if(ns){ await ns.save({filename:name, data:blob}); return; }
+  }catch(err){ if(err && err.code==="declined") throw err; }
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function setupDocx(){
+  const btn = document.getElementById("docxBtn"); const help = document.getElementById("docsHelp");
+  if(typeof JSZip!=="undefined"){ if(btn) btn.hidden=false; if(help) help.hidden=false; }
+}
+function flash(msg,id){
+  const el = document.getElementById(id||"msg"); if(!el) return;
+  el.textContent = msg; el.hidden = false; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.hidden=true; },4000);
+}
+
+app.addEventListener("input", e=>{ if(e.target.id==="lesson") st.lesson = e.target.value; });
+app.addEventListener("click", async e=>{
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act, i = Number(b.dataset.i);
+  if(act==="start") go("area");
+  else if(act==="back") back();
+  else if(act==="restart") restart();
+  else if(act==="area"){ st.area=i; st.sit=null; st.cause=null; go("sit"); }
+  else if(act==="sit"){ st.sit=i; st.cause=null; go(AREAS[st.area].sits[i].cs.length? "cause":"scenes"); }
+  else if(act==="cause"){ st.cause=i; go("scenes"); }
+  else if(act==="scene"){ if(st.scenes.has(i)) st.scenes.delete(i); else st.scenes.add(i); b.setAttribute("aria-pressed", st.scenes.has(i)); }
+  else if(act==="result"){ st.picked = new Set(); st.init=false; go("result"); }
+  else if(act==="pick"){
+    const id = b.dataset.id; const on = !st.picked.has(id);
+    if(on) st.picked.add(id); else st.picked.delete(id);
+    b.setAttribute("aria-pressed", on); b.classList.toggle("primary", on); b.textContent = on? "담았어요":"내 재설계안에 담기";
+    const it = b.closest(".item"); if(it) it.classList.toggle("picked", on);
+    buildSummary();
+  }
+  else if(act==="filter"){
+    st.filter = b.dataset.f;
+    document.querySelectorAll(".chipbtn").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===st.filter));
+    document.querySelectorAll(".item").forEach(el=>{ el.hidden = st.filter!=="all" && el.dataset.lv!==st.filter; });
+  }
+  else if(act==="board"){ go("board"); loadBoard(); }
+  else if(act==="send"){ b.disabled=true; await sendMine(); b.disabled=false; }
+  else if(act==="refresh"){ flash("불러오는 중…"); loadBoard(); }
+  else if(act==="copy"){
+    const ta = document.getElementById("out");
+    const done = ()=>flash("복사했어요");
+    const fallback = ()=>{ ta.focus(); ta.select(); try{ if(document.execCommand("copy")) done(); }catch(_){} };
+    try{ navigator.clipboard.writeText(ta.value).then(done, fallback); }catch(_){ fallback(); }
+  }
+  else if(act==="docx"){
+    const ta = document.getElementById("out");
+    try{
+      const blob = await makeDocx(ta.value);
+      await saveFile("Re-design_정리.docx", blob);
+      flash("저장했어요. 구글 드라이브에 올려 열어 보세요.");
+    }catch(err){
+      if(err && err.code==="declined") flash("저장을 취소했어요.");
+      else if(err && err.code==="rate_limited") flash("잠시 뒤에 다시 눌러 주세요.");
+      else flash("이 화면에서는 파일 저장을 쓸 수 없어요. ‘글 복사하기’를 이용해 주세요.");
+    }
+  }
+});
+render();
+initShared();
+</script>
