@@ -132,6 +132,12 @@ textarea{min-height:260px;resize:vertical;line-height:1.65}
 .bigline b{font-family:var(--font-display);font-size:2rem;line-height:1;color:var(--accent);margin-right:6px}
 .sendbox{border-top:1px dashed var(--rule);padding:22px 24px 8px;display:flex;flex-direction:column;gap:12px}
 .bsec{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.sentbox,.evalbox{display:flex;flex-direction:column;gap:12px;border:1px dashed var(--rule);border-radius:6px;padding:16px 18px;background:var(--tint)}
+.sentbox h4,.evalbox h4{margin:0;font-family:var(--font-display);font-size:1rem;font-weight:600}
+.sentbox input[type=text],.evalbox textarea{background:var(--paper)}
+.evalbox textarea{min-height:76px}
+.exline{font-size:.88rem;color:var(--muted)}
+.exline b{color:var(--ink);font-weight:500}
 </style>
 
 <div class="wrap" id="app"></div>
@@ -654,11 +660,11 @@ const SCENES = [
 ];
 
 const app = document.getElementById("app");
-const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", lesson:"", stack:[], docState:""};
+const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", sent:{before:"",problem:null,change:null,outcome:""}, evalr:{before:"",after:""}, lesson:"", stack:[], docState:""};
 
 function go(next){ st.stack.push(st.step); st.step = next; render(); window.scrollTo({top:0}); }
 function back(){ if(!st.stack.length) return; st.step = st.stack.pop(); render(); window.scrollTo({top:0}); }
-function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",stack:[],docState:""}); render(); window.scrollTo({top:0}); }
+function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:""}); render(); window.scrollTo({top:0}); }
 
 const KO = ["가","나","다","라","마","바","사","아","자","차","카","타","파","하","거","너","더","러","머","버"];
 const LV = {now:"바로 가능", class:"수업 중 적용", prep:"준비 필요"};
@@ -813,7 +819,34 @@ function renderResult(){
       ${list.map((r,i)=>item(r,i+1)).join("")}
       <div class="sumbox" id="summary">
         <h3>내 Re-design 정리</h3>
-        <p class="hint">아래 글은 직접 고쳐 쓸 수 있어요. 【 】 부분을 내 수업에 맞게 채운 뒤 저장하세요.</p>
+        <div class="sentbox">
+          <h4>한 문장 Re-design 만들기</h4>
+          <p class="hint">칸을 채우면 아래 정리의 한 문장이 자동으로 완성됩니다. 문제와 바꾼 점은 고른 답에서 미리 채워 두었으니 고쳐 쓰세요.</p>
+          <label class="field" for="s_before">기존에는 (기존 수업의 모습)
+            <input type="text" id="s_before" placeholder="예: 학생이 만든 그래프의 수치를 읽기만 하는">
+          </label>
+          <label class="field" for="s_problem">문제 (막힌 곳)
+            <input type="text" id="s_problem">
+          </label>
+          <label class="field" for="s_change">바꾼 점 (Re-design)
+            <input type="text" id="s_change">
+          </label>
+          <label class="field" for="s_outcome">그 결과 학생이 ____ 수 있도록
+            <input type="text" id="s_outcome" placeholder="예: 그래프를 고른 이유와 해석 근거를 설명할">
+          </label>
+        </div>
+        <div class="evalbox" id="evalbox" hidden>
+          <h4>평가기준 전→후 다시 쓰기</h4>
+          <p class="exline"><b>예시</b> 전: 그래프를 올바르게 그렸다 → 후: 목적에 맞는 그래프를 고른 이유와 해석의 근거를 설명한다</p>
+          <p class="hint">‘잘했다’ 대신 학생이 보여 줄 행동과 근거를 적어 보세요.</p>
+          <label class="field" for="e_before">기존 평가기준 (전)
+            <textarea id="e_before" placeholder="내 수업의 기존 평가기준을 적어 주세요"></textarea>
+          </label>
+          <label class="field" for="e_after">바꾼 평가기준 (후)
+            <textarea id="e_after" placeholder="행동 + 근거로 다시 써 보세요"></textarea>
+          </label>
+        </div>
+        <p class="hint">아래 정리 글도 직접 고쳐 쓸 수 있어요. 단, 위 칸이나 처방을 바꾸면 정리 글이 다시 만들어집니다.</p>
         <textarea id="out" aria-label="Re-design 정리" spellcheck="false"></textarea>
         <div class="row">
           <button class="btn primary" data-act="docx" id="docxBtn" hidden>구글 독스용 파일(.docx) 저장</button>
@@ -833,10 +866,32 @@ function renderResult(){
     </section>
     <div class="row">${backBtn()}<button class="btn" data-act="restart">처음부터 다시</button></div>`;
   buildSummary();
+  syncInputs();
   setupDocx();
   setupSend();
 }
 
+function sentVals(sit,titles){
+  const d = st.sent;
+  return {
+    before: d.before,
+    problem: d.problem===null? sit.t : d.problem,
+    change: d.change===null? titles.slice(0,2).join(", ") : d.change,
+    outcome: d.outcome
+  };
+}
+function hasEvalRx(){
+  return [...st.picked].some(id=>RX[id] && RX[id].el.includes("E"));
+}
+function syncInputs(){
+  const {list,sit} = compute();
+  const titles = list.filter(r=>st.picked.has(r.id)).map(r=>RX[r.id].t);
+  const V = sentVals(sit,titles);
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v; };
+  set("s_before",V.before); set("s_problem",V.problem); set("s_change",V.change); set("s_outcome",V.outcome);
+  set("e_before",st.evalr.before); set("e_after",st.evalr.after);
+  const eb = document.getElementById("evalbox"); if(eb) eb.hidden = !hasEvalRx();
+}
 function buildSummary(){
   const {list,sit} = compute();
   const picked = list.filter(r=>st.picked.has(r.id));
@@ -844,8 +899,20 @@ function buildSummary(){
   let t = "";
   if(st.lesson.trim()) t += "내 수업: "+st.lesson.trim()+"\n";
   t += "막힌 곳: "+AREAS[st.area].t+" > "+sit.t+"\n\n";
+  const V = sentVals(sit, titles);
+  const slot = v=>(v&&v.trim())? v.trim().replace(/[.。]+$/,"") : "【　　】";
   t += "[한 문장 Re-design]\n";
-  t += "기존에는 【　　】한 수업이었지만, 학생이 【　　】할 수 있도록 "+(titles.length? titles.slice(0,2).join(", "):"【　　】")+"을(를) 중심으로 다시 설계하였습니다.\n\n";
+  t += "기존에는 "+slot(V.before)+" 수업이었으나, "+slot(V.problem)+". 이에 "+slot(V.change)+"을(를) 적용해 학생이 "+slot(V.outcome)+" 수 있도록 다시 설계하였다.\n";
+  if(V.before.trim()) t += "기존 수업: "+V.before.trim()+"\n";
+  t += "문제: "+slot(V.problem)+"\n";
+  t += "바꾼 점: "+slot(V.change)+"\n";
+  if(V.outcome.trim()) t += "학생 변화: "+V.outcome.trim()+"\n";
+  t += "\n";
+  if(st.evalr.before.trim() || st.evalr.after.trim()){
+    t += "[평가기준 전→후]\n";
+    t += "기존 평가기준: "+(st.evalr.before.trim()||"【　　】")+"\n";
+    t += "바꾼 평가기준: "+(st.evalr.after.trim()||"【　　】")+"\n\n";
+  }
   if(picked.length){
     t += "[담은 처방]\n";
     picked.forEach((r,i)=>{
@@ -966,7 +1033,7 @@ function docxBody(text){
     else if(/^\d+\. /.test(line)) out.push(para(line,{style:"Heading3"}));
     else if((m=line.match(/^\s+- (.*)$/))) out.push(para("• "+m[1],{left:560,hang:240}));
     else if((m=line.match(/^\s+(\S.*)$/))) out.push(para(m[1],{left:320}));
-    else if(/^(내 수업|막힌 곳):/.test(line)) out.push(para(line,{bold:true}));
+    else if(/^(내 수업|막힌 곳|기존 수업|문제|바꾼 점|학생 변화|기존 평가기준|바꾼 평가기준):/.test(line)) out.push(para(line,{bold:true}));
     else out.push(para(line));
   });
   return out.join("");
@@ -1002,7 +1069,16 @@ function flash(msg,id){
   el.textContent = msg; el.hidden = false; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.hidden=true; },4000);
 }
 
-app.addEventListener("input", e=>{ if(e.target.id==="lesson") st.lesson = e.target.value; });
+app.addEventListener("input", e=>{
+  const id = e.target.id;
+  if(id==="lesson") st.lesson = e.target.value;
+  else if(id==="s_before"){ st.sent.before = e.target.value; buildSummary(); }
+  else if(id==="s_problem"){ st.sent.problem = e.target.value; buildSummary(); }
+  else if(id==="s_change"){ st.sent.change = e.target.value; buildSummary(); }
+  else if(id==="s_outcome"){ st.sent.outcome = e.target.value; buildSummary(); }
+  else if(id==="e_before"){ st.evalr.before = e.target.value; buildSummary(); }
+  else if(id==="e_after"){ st.evalr.after = e.target.value; buildSummary(); }
+});
 app.addEventListener("click", async e=>{
   const b = e.target.closest("[data-act]"); if(!b) return;
   const act = b.dataset.act, i = Number(b.dataset.i);
@@ -1020,6 +1096,7 @@ app.addEventListener("click", async e=>{
     b.setAttribute("aria-pressed", on); b.classList.toggle("primary", on); b.textContent = on? "담았어요":"내 재설계안에 담기";
     const it = b.closest(".item"); if(it) it.classList.toggle("picked", on);
     buildSummary();
+    syncInputs();
   }
   else if(act==="filter"){
     st.filter = b.dataset.f;
