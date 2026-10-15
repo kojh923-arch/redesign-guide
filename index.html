@@ -979,6 +979,20 @@ async function sendMine(){
     flash("보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.","msg2");
   }
 }
+async function resetBoard(){
+  const pw = window.prompt("연수실을 초기화하면 모인 결과가 모두 지워집니다.\n비밀번호를 입력하세요.");
+  if(pw===null) return;
+  if(!window.confirm("정말 모든 결과를 지울까요? 되돌릴 수 없습니다.")) return;
+  try{
+    const r = await fetch(SCRIPT_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({action:"reset", password:pw}), redirect:"follow"});
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error||"fail");
+    board.docs = []; board.ready = true; board.err = "";
+    renderBoard(); flash("초기화했어요.","msg");
+  }catch(e){
+    flash(String(e.message).includes("wrong")? "비밀번호가 맞지 않아요." : "초기화하지 못했어요. 스크립트를 새 버전으로 배포했는지 확인해 주세요.","msg");
+  }
+}
 function brow(label,count,max,hot,extra){
   const pct = max? Math.round(count/max*100):0;
   return `<div class="brow ${hot?"hot":""}"><div class="l"><span>${label}</span>${extra||""}</div><div class="bt"><span class="tr"><span style="width:${pct}%"></span></span><span class="n">${count}명</span></div></div>`;
@@ -1013,7 +1027,7 @@ function renderBoard(){
       <div class="bsec"><h3>많이 담은 처방 TOP ${rxs.length}</h3>${rxs.map(([id,c],i)=>brow(RX[id].t,c,rxs[0][1],i===0)).join("")}</div>`;
   }
   app.innerHTML = `<section class="slip"><div class="slip-head big"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">연수실 결과표 · 익명</span><h2>우리가 함께 막힌 곳</h2></div></div><div class="body">${inner}
-    <div class="row">${backBtn()}<button class="btn" data-act="refresh">새로고침</button><span class="ok" id="msg" hidden></span></div>
+    <div class="row">${backBtn()}<button class="btn" data-act="refresh">새로고침</button><button class="btn" data-act="resetboard">연수실 초기화</button><span class="ok" id="msg" hidden></span></div>
     <p class="hint">이름 없이 선택값만 모입니다. 새로 보내는 선생님이 있으면 이 화면이 저절로 갱신돼요.</p></div></section>`;
 }
 /* .docx 만들기: 정리 글을 줄 단위로 읽어 제목·소제목·목록으로 바꿉니다. */
@@ -1103,6 +1117,7 @@ app.addEventListener("click", async e=>{
     document.querySelectorAll(".chipbtn").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===st.filter));
     document.querySelectorAll(".item").forEach(el=>{ el.hidden = st.filter!=="all" && el.dataset.lv!==st.filter; });
   }
+  else if(act==="resetboard") resetBoard();
   else if(act==="board"){ go("board"); loadBoard(); }
   else if(act==="send"){ b.disabled=true; await sendMine(); b.disabled=false; }
   else if(act==="refresh"){ flash("불러오는 중…"); loadBoard(); }

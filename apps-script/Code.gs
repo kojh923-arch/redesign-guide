@@ -4,6 +4,7 @@
  * 이름·이메일은 받지 않고, 선택값만 한 사람당 한 줄로 저장합니다.
  */
 const SHEET_NAME = 'submissions';
+const RESET_PASSWORD = 'reset'; // 연수실 초기화 비밀번호 (바꾸려면 여기만 고치고 새 버전으로 배포)
 const HEADERS = ['id','시간','영역','상황','원인','먼저 손볼 요소','담은 처방','area','sit','cause','scenes','picked','top'];
 
 function sheet_() {
@@ -23,6 +24,12 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     const d = JSON.parse(e.postData.contents);
+    if (d.action === 'reset') {
+      if (String(d.password || '') !== RESET_PASSWORD) return json_({ ok: false, error: 'wrong password' });
+      const sh = sheet_(), n = sh.getLastRow();
+      if (n > 1) sh.deleteRows(2, n - 1);
+      return json_({ ok: true, cleared: Math.max(n - 1, 0) });
+    }
     const id = str_(d.id, 80);
     if (!id || !Number.isInteger(d.area) || !Number.isInteger(d.sit)) throw new Error('bad request');
     const L = d.labels || {};
