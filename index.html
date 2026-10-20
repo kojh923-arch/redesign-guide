@@ -29,7 +29,7 @@
 }
 *{box-sizing:border-box}
 body{background:var(--desk);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.7;padding-inline:16px;padding-block:0 64px;word-break:keep-all}
-.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.35;letter-spacing:-.01em}
 h1{font-size:1.9rem;font-weight:700}
 h2{font-size:1.45rem;font-weight:600}
@@ -178,7 +178,7 @@ select{font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--rule);bor
 h1,h2,h3{font-weight:400}
 .wrap{padding-top:22px;gap:20px}
 #topbar{position:sticky;top:0;z-index:20;margin-inline:-16px;padding:0 16px;height:var(--hh);background:color-mix(in srgb,var(--desk) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
-#topbar .in{max-width:720px;margin:0 auto;height:100%;display:flex;align-items:center;gap:14px}
+#topbar .in{max-width:1080px;margin:0 auto;height:100%;display:flex;align-items:center;gap:14px}
 .brand{all:unset;cursor:pointer;display:flex;flex-direction:column;line-height:1.2;flex:none}
 .brand b{font-family:var(--font-display);font-weight:400;font-size:1.1rem}
 .brand span{font-size:.72rem;color:var(--muted)}
@@ -249,6 +249,13 @@ input[type=text]:focus,textarea:focus{background:var(--paper)}
 .lcard span{font-size:.88rem}
 .about{background:var(--paper);border-radius:26px;padding:22px 24px;box-shadow:0 4px 18px rgba(80,60,140,.07);display:flex;flex-direction:column;gap:10px}
 .about ul{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:6px}
+@media (min-width:900px){
+  .wrap{padding-inline:24px}#topbar{padding:0 24px;margin-inline:-24px}
+  .slip:not(.rxslip){padding:8px 16px 20px}
+  .opts{display:grid;grid-template-columns:1fr 1fr}
+  .lens6{grid-template-columns:repeat(3,1fr)}
+  .slip:not(.rxslip) .lead,.slip:not(.rxslip) h2{max-width:70ch}
+}
 @media (prefers-reduced-motion:reduce){.hcard{transition:none}}
 </style>
 
