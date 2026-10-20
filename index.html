@@ -152,6 +152,29 @@ textarea{min-height:260px;resize:vertical;line-height:1.65}
 .timer.over{color:var(--stamp)}
 select{font:inherit;font-size:.9rem;padding:8px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--ink);max-width:100%}
 .mapnote{font-size:.88rem;color:var(--muted);border-left:3px solid var(--rule);padding-left:10px}
+.steps3{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+.steps3 b{color:var(--ink)}
+.casetabs{display:flex;gap:6px;flex-wrap:wrap}
+.cdl{display:grid;grid-template-columns:7.2rem 1fr;gap:6px 14px;margin:0;font-size:.92rem}
+.cdl dt{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;color:var(--muted);padding-top:3px}
+.cdl dd{margin:0;min-width:0}
+@media (max-width:480px){.cdl{grid-template-columns:1fr}.cdl dt{padding-top:6px}}
+.flow{display:flex;flex-direction:column;gap:8px}
+.fstep{display:grid;grid-template-columns:2rem 1fr;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--rule);border-radius:6px}
+.fstep .n{font-family:var(--font-display);font-weight:700;color:var(--accent);font-size:1.1rem}
+.fstep b{display:block}
+.fstep span.d{color:var(--muted);font-size:.9rem}
+.lvl{display:grid;grid-template-columns:2.4rem 1fr;gap:10px;padding:10px 12px;border-left:3px solid var(--rule);background:var(--tint);border-radius:0 4px 4px 0;font-size:.92rem}
+.lvl b{font-family:var(--font-display)}
+.lvl.hi{border-color:var(--accent)}.lvl.lo{border-color:var(--stamp)}
+.etab{display:grid;gap:0;border:1px solid var(--rule);border-radius:6px;overflow:hidden;font-size:.9rem}
+.erow{display:grid;grid-template-columns:.9fr 1.2fr 1.2fr;gap:12px;padding:10px 12px;border-bottom:1px solid var(--rule)}
+.erow:last-child{border-bottom:0}
+.erow.h{background:var(--tint);font-family:var(--font-mono);font-size:.72rem;letter-spacing:.05em;color:var(--muted)}
+@media (max-width:560px){.erow{grid-template-columns:1fr;gap:2px}.erow.h{display:none}.erow span:first-child{font-weight:600}}
+.lensrate{display:flex;gap:6px;flex-wrap:wrap}
+.hit{border:1px solid var(--accent);background:var(--tint);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.badge{display:inline-block;font-size:.72rem;font-weight:500;padding:1px 8px;border-radius:99px;background:var(--stamp);color:var(--accent-ink);margin-left:6px;vertical-align:middle}
 </style>
 
 <div class="wrap" id="app"></div>
@@ -674,13 +697,13 @@ const SCENES = [
 ];
 
 const app = document.getElementById("app");
-const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", sent:{before:"",problem:null,change:null,outcome:""}, evalr:{before:"",after:""}, lesson:"", stack:[], docState:"", tab:"rx", frame:{scene:"",elem:null,evid:null}, chk:newChk(), map:newMap(), talk:{why:null,what:null,evid:null}};
+const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", sent:{before:"",problem:null,change:null,outcome:""}, evalr:{before:"",after:""}, lesson:"", stack:[], docState:"", tab:"rx", cs:"c1", lensCase:"c1", lensRate:{}, lensMemo:{}, lensRev:false, frame:{scene:"",elem:null,evid:null}, chk:newChk(), map:newMap(), talk:{why:null,what:null,evid:null}};
 
 function newChk(){ const o={}; ["G","A","T","L","S","E"].forEach(k=>o[k]={lv:"",fix:null}); return o; }
 function newMap(){ return [0,1,2,3,4].map(()=>({act:"",role:"",fix:""})); }
 function go(next){ st.stack.push(st.step); st.step = next; render(); window.scrollTo({top:0}); }
 function back(){ if(!st.stack.length) return; st.step = st.stack.pop(); render(); window.scrollTo({top:0}); }
-function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:"",tab:"rx",frame:{scene:"",elem:null,evid:null},chk:newChk(),map:newMap(),talk:{why:null,what:null,evid:null}}); render(); window.scrollTo({top:0}); }
+function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:"",tab:"rx",cs:"c1",lensCase:"c1",lensRate:{},lensMemo:{},lensRev:false,frame:{scene:"",elem:null,evid:null},chk:newChk(),map:newMap(),talk:{why:null,what:null,evid:null}}); render(); window.scrollTo({top:0}); }
 
 const KO = ["가","나","다","라","마","바","사","아","자","차","카","타","파","하","거","너","더","러","머","버"];
 const LV = {now:"바로 가능", class:"수업 중 적용", prep:"준비 필요"};
@@ -694,7 +717,7 @@ const LVMAP = {
  r_pre:"prep", r_homework:"prep", r_exit:"now", r_model:"class"
 };
 const lvOf = id => LVMAP[id] || "class";
-const STEPS = ["intro","area","sit","cause","scenes","result","board"];
+const STEPS = ["intro","cases","lens","area","sit","cause","scenes","result","board"];
 function today(){ const d=new Date(); return d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate(); }
 function attr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
 function qprog(){
@@ -718,25 +741,30 @@ function opts(items, act, pressedFn){
 function render(){
   const a = st.area!==null? AREAS[st.area]:null;
   if(st.step==="intro"){
-    app.innerHTML = slip("모듈 4 · 3차시 Re-design 준비", `
+    app.innerHTML = slip("모듈 4 · Re-design 준비", `
       <h1>Re-design 길잡이</h1>
-      <p class="lead">내 수업에서 막힌 곳을 고르며 따라가면, 먼저 손볼 요소와 그에 맞는 처방이 나와요. 질문은 모두 선택지이고 정답은 없습니다. 답에 따라 다음 질문이 달라지고, 고른 답이 섞여서 결과가 나옵니다.</p>
+      <p class="lead">세 단계로 내 수업의 Re-design 출발점을 찾아요. ① 교안의 데이터 분석 수업 사례를 살펴보고, ② 여섯 렌즈로 그 수업을 분석한 뒤, ③ 내 수업에서 막히는 점을 고르면 먼저 손볼 요소와 처방이 나옵니다. 정답은 없습니다.</p>
+      <ol class="steps3"><li><b>사례 탐색</b> 세 수업의 흐름·평가기준·학습의 증거</li><li><b>렌즈 분석</b> 교육적·학습자·기술적·평가·윤리적·실행</li><li><b>어려운 점 설문</b> 막힌 곳 → 처방전, 연수실 결과표</li></ol>
       <label class="field" for="lesson">내 수업을 한 줄로 적어 주세요 (선택)
         <input type="text" id="lesson" value="${attr(st.lesson)}" placeholder="예: 6학년 수학 여러 가지 그래프, 웹앱으로 그래프 만들고 기사문 쓰기">
       </label>
-      <div class="row"><button class="btn primary" data-act="start">처방 받으러 가기</button><button class="btn" data-act="board" id="boardBtn"${SCRIPT_URL?"":" hidden"}>연수실 결과표 보기</button></div>
+      <div class="row"><button class="btn primary" data-act="tocases">사례 탐색 시작</button><button class="btn" data-act="start">바로 설문으로</button><button class="btn" data-act="board" id="boardBtn"${SCRIPT_URL?"":" hidden"}>연수실 결과표 보기</button></div>
       <p class="hint">입력한 내용은 이 화면에서만 쓰이고 서버로 보내지 않습니다.</p>`);
     return;
   }
+  if(st.step==="cases"){ app.innerHTML = panelCases(); return; }
+  if(st.step==="lens"){ app.innerHTML = panelLens(); return; }
   if(st.step==="area"){
-    app.innerHTML = slip("질문 1 / 4", `
+    const ga = gapAreas(), gl = LENS6.filter(([k])=>st.lensRate[k]==="gap").map(l=>l[1]);
+    app.innerHTML = slip("어려운 점 설문 1 / 4", `
       <h2>내 수업에서 가장 막히는 곳은 어디인가요?</h2>
-      ${opts(AREAS.map(x=>({t:x.t,d:x.d})),"area")}
+      ${gl.length? `<p class="lead">사례 렌즈 분석에서 ‘아쉬워요’로 고른 렌즈: <b>${gl.join(" · ")}</b>. 내 수업에서도 비슷한 곳이 있는지 생각하며 고르세요.</p>`:`<p class="lead">사례를 보며 떠오른 내 수업의 어려움을 골라 주세요. 정답은 없습니다.</p>`}
+      ${opts(AREAS.map(x=>({t:x.t+(ga[x.id]? `<span class="badge">분석에서 아쉬움 · ${ga[x.id].join("·")}</span>`:""),d:x.d})),"area")}
       <div class="row">${backBtn()}</div>`);
     return;
   }
   if(st.step==="sit"){
-    app.innerHTML = slip("질문 2 / 4", `
+    app.innerHTML = slip("어려운 점 설문 2 / 4", `
       ${crumbs()}
       <h2>${a.id==="unsure"?"가장 가깝게 느껴지는 장면은 무엇인가요?":"그중에서 어떤 상황에 가장 가깝나요?"}</h2>
       ${opts(a.sits,"sit")}
@@ -745,7 +773,7 @@ function render(){
   }
   if(st.step==="cause"){
     const s = a.sits[st.sit];
-    app.innerHTML = slip("질문 3 / 4", `
+    app.innerHTML = slip("어려운 점 설문 3 / 4", `
       ${crumbs()}
       <h2>왜 그렇게 되었다고 생각하세요?</h2>
       ${opts(s.cs,"cause")}
@@ -753,7 +781,7 @@ function render(){
     return;
   }
   if(st.step==="scenes"){
-    app.innerHTML = slip("질문 4 / 4 · 여러 개 선택", `
+    app.innerHTML = slip("어려운 점 설문 4 / 4 · 여러 개 선택", `
       ${crumbs()}
       <h2>그 밖에 겪은 일이 있으면 모두 골라 주세요</h2>
       <p class="lead">고른 만큼 처방이 더 섞여 나옵니다. 없으면 바로 결과를 보세요.</p>
@@ -951,6 +979,104 @@ function buildSummary(){
 }
 
 
+/* ===== 사례 탐색 · 렌즈 분석 (교안 PPT 1·2차시 사례 ①②③) ===== */
+const LENS6 = [["edu","교육적","goal"],["stu","학습자","act"],["tech","기술적","tech"],["eval","평가","eval"],["eth","윤리적","ethic"],["exec","실행","real"]];
+const LENS_Q6 = {edu:"AI 활용이 학습목표 달성에 실제로 도움이 되었는가?",stu:"학생이 스스로 생각하고 선택하고 판단할 기회가 충분했는가?",tech:"활용한 AI·디지털 기술이 수업 목적과 학생 수준에 적절했는가?",eval:"학생의 결과뿐 아니라 사고 및 AI 활용 과정을 충분히 평가할 수 있었는가?",eth:"오류·편향·개인정보·저작권·AI 의존 등 고려하지 못한 문제는 없었는가?",exec:"실제 교실의 시간, 기기, 학생 수준, 접근성 등을 고려할 때 실행 가능한 설계였는가?"};
+const RATES = [["good","잘 이루어졌어요"],["ok","보통이에요"],["gap","아쉬워요"]];
+const CASES3 = [
+{id:"c1",no:"①",t:"웹앱으로 그래프·기사문 만들기",
+ ov:[["학년·교과","초등 6학년 수학 ㅣ 6. 여러 가지 그래프"],["성취기준","[6수04-02] 자료를 수집하여 띠그래프나 원그래프로 나타내고 해석할 수 있다."],["AI·디지털 도구","구글 클래스룸·구글 설문, 교사 제작 웹앱 [띠그래프·원그래프 만들기], 패들렛, AI 글쓰기 도우미"],["학습목표","탐구 목적과 자료 수집 방법을 정하고, 수집한 자료를 웹앱으로 정리해 띠그래프·원그래프로 나타내며, 그래프에 어울리는 기사문을 작성할 수 있다."],["수업 의도","6학년 발달 단계와 흥미를 고려해, 직접 제작한 웹앱으로 그래프 표현의 부담을 줄이고 해석과 표현에 집중하게 한다."]],
+ flow:[["흥미 유발","‘선생님 별명 설문조사’로 자료 수집·참여 결과를 그래프로 바로 확인 → 통계적 흥미 유발"],["자료 수집","모둠별로 궁금한 주제로 설문을 만들어 친구들에게 답변 모으기(구글 클래스룸·구글 설문)"],["그래프 표현","웹앱 [띠그래프·원그래프 만들기]에 수치를 입력해 그래프 자동 생성 → 표현 부담 줄이기"],["해석과 표현","그래프에서 알게 된 사실로 기사문 작성, AI 글쓰기 도우미로 맞춤법 점검 후 패들렛에 공유"]],
+ ev:"자료 수집 · 띠그래프/원그래프 표현 · 그래프 관련 기사문 작성 (결과물과 과정을 함께 보는 상·중·하 평가기준)",
+ lv:[["상","자료를 잘 수집하여 띠그래프와 원그래프로 잘 나타내고, 그래프와 관련된 기사문을 잘 작성할 수 있다."],["중","자료를 잘 수집하여 띠그래프와 원그래프로 잘 나타내지만, 그래프와 관련된 기사문을 작성하는 데 어려움이 있다."],["하","자료 수집과 띠그래프·원그래프로 나타내는 데 어려움이 있다."]],
+ pt:"완성된 결과물(기사문)의 품질만이 아니라 ‘자료 수집 → 그래프 표현 → 해석·기사문 작성’으로 이어지는 전 과정을 평가기준에 함께 반영했습니다.",
+ proof:[["흥미 유발 · 탐구 목적","탐구 목적에 맞는 자료를 정한다","모둠별 설문 주제·항목 구성안"],["자료 수집","자료 수집 방법을 정하고 수집한다","구글 설문 화면, 응답 수집 기록"],["그래프 표현","띠·원그래프로 나타내고 수치를 확인한다","웹앱 입력 수치와 그래프 화면, 그래프 선택 이유 메모"],["해석과 표현","그래프에 어울리는 기사문을 쓴다","패들렛 기사문, 글쓰기 도우미 수정 전·후 비교"]],
+ lq:{edu:"웹앱 조작이 목표가 되지 않고, 그래프의 ‘해석·판단’이라는 성취기준 학습으로 이어졌는가? 자동 그래프가 해석 시간을 늘려 주었는가?",stu:"탐구 주제와 설문 항목을 학생이 직접 정하고, 그 항목을 고른 이유를 말할 수 있었는가?",tech:"웹앱이 자동으로 만든 그래프가 맞는지(눈금, 비율 합계 100%) 학생이 확인했는가? 수치 입력만으로 표현 부담이 줄었는가?",eval:"평가기준에 자료 수집·표현·해석 과정이 모두 들어 있었는가? 그래프 선택 이유와 수정 전·후 기사문이 증거로 남았는가?",eth:"설문 문항이 개인정보를 묻거나 무례하지 않았는가? 응답자 수와 대상이 치우쳐 결론이 왜곡되지 않았는가?",exec:"설문 응답 수집 시간과 기기 수, 로그인이 수업을 방해하지 않았는가? 도구 숙련도 차이를 위한 도움 장치가 있었는가?"},
+ good:[["자료 수집 역량의 실질적 향상","학생들이 ‘탐구 목적에 맞는 자료’가 무엇인지 스스로 판단. 교과서 속 주어진 데이터를 그대로 옮기던 활동에서 벗어남."],["그래프 해석·표현 능력의 정착","웹앱으로 표현에 드는 시간을 절약하고, ‘비율이 왜 이렇게 나왔을까’를 해석하는 데 더 많은 인지적 자원을 사용."],["정의적 영역의 변화","패들렛 기사문 작성에서 글쓰기 분량과 완성도가 예상보다 높았고, 일부 학생은 관련 뉴스 기사를 스스로 찾아 인용."]],
+ gap:"일부 모둠이 흥미 위주로 항목을 골라 해석이 얕아짐 → 항목 선정 이유와 해석 질문 체크리스트를 보강한다.",rel:["stu","eval"]},
+{id:"c2",no:"②",t:"빅데이터로 저출산 탐구",
+ ov:[["학년·교과","초등 6학년 사회·수학·실과 융합 ㅣ 저출산 해결 프로젝트 (4~11/15차시)"],["성취기준","[6사01-05] 우리나라의 인구 분포 및 구조에서 나타난 변화와 도시 발달 과정에서 나타난 특징을 탐구한다. [6수05-04] 자료를 수집, 분류, 정리하여 목적에 맞는 그래프로 나타내고, 그래프를 해석할 수 있다."],["AI·디지털 도구","AI연구원 챗봇(질문 만들기), 빅카인즈(뉴스 빅데이터), 네이버 데이터랩, 클래스팅 AI코스웨어, 캔바, 띵커벨"],["학습목표","저출산 관련 빅데이터를 수집·정리해 사회적 인식과 관심의 변화를 파악하고, 출산율 자료를 그래프로 나타내 해결 방안을 제안한다."],["수업 의도","빅데이터로 저출산의 과거·현재·미래를 살피고 그래프로 표현하여, 사회 문제를 데이터에 근거해 이해하고 해결 방안으로 연결하게 한다."]],
+ flow:[["심각성 파악 · 질문 만들기","출산율 그래프·표·영상을 보고 저출산의 심각성을 파악하고, AI연구원 챗봇의 도움으로 탐구 질문 만들기 (1~3차시)"],["빅데이터 수집","빅카인즈로 저출산 관련 뉴스를 모아 워드클라우드로 사회적 인식을 정리하고, 네이버 데이터랩으로 연도별 관심도 파악하기 (4~7차시)"],["그래프 표현","그래프 해석·표현 방법을 AI코스웨어로 복습하고, 출산율 자료를 캔바로 그래프로 나타내기 (8~11차시)"],["보고서 · 해결 방안","탐구 질문을 해결하는 보고서를 쓰고 발표하기, 모둠별로 해결 방안을 질문하며 대책 제시하기"]],
+ ev:"빅데이터 수집·정리(워드클라우드·관심도) · 출산율 그래프 표현과 해석 · 보고서·발표와 해결 방안 제안 (보고서·발표 관찰평가, 모둠 협업 관찰, 자기평가)",
+ lv:[["상","빅카인즈·데이터랩으로 저출산 자료를 수집·정리하고 출산율 자료를 그래프로 나타내 해석하며, 이를 근거로 해결 방안을 제안·발표할 수 있다."],["중","자료를 수집해 그래프로 나타낼 수 있으나, 그래프 해석을 해결 방안과 연결하여 발표하는 데 어려움이 있다."],["하","빅데이터로 자료를 수집하거나 출산율 자료를 그래프로 나타내는 데 어려움이 있다."]],
+ pt:"수집·정리(데이터), 그래프 표현·해석, 해결 방안 발표의 세 장면을 나누어 보고, 평가 방법도 관찰·협업·자기평가로 장면에 맞게 나누었습니다. (강사 정리 예시)",
+ proof:[["심각성 파악·질문","출산율 자료를 보고 심각성과 탐구 질문을 만드는가","학생이 만든 탐구 질문(패들렛)"],["빅데이터 수집","빅카인즈·데이터랩으로 사회적 인식과 관심도를 파악하는가","워드클라우드, 저출산 관심도 화면"],["그래프 표현","출산율 자료를 그래프로 나타내고 해석하는가","학생이 만든 출산율 그래프(캔바)"],["보고서·해결 방안","자료를 근거로 해결 방안을 제안·발표하는가","캔바 보고서, 발표, 자기평가"]],
+ lq:{edu:"빅카인즈·데이터랩 조작이 목표가 되지 않고, 저출산의 변화를 이해하고 해결 방안을 제안하는 성취기준 도달로 이어졌는가?",stu:"탐구 질문과 확인할 자료(워드클라우드·관심도·출산율)를 학생이 직접 정하고, 그 이유를 말할 수 있었는가?",tech:"데이터랩 검색량이 가장 많았던 때를 100으로 둔 상대값이라는 한계를 학생 수준에서 짚었는가?",eval:"보고서·발표·자기평가에 ‘왜 관심이 늘었다고 보는가’ 같은 해석 근거가 남았는가?",eth:"저출산을 다룰 때 가정 상황이 드러나거나 낙인찍히지 않게 하고, 자료의 출처와 시기를 밝혔는가?",exec:"15차시 중 수집·그래프·보고서·발표를 4~11차시 안에 해낼 시간과 기기, 접속 환경이 확보되었는가?"},
+ good:[],gap:"관심도(검색량) 그래프의 의미와 이유를 확인하지 않고 보고서에 옮길 수 있음 → 값의 의미(상대값·기간)를 확인하고 이유를 다른 자료로 확인하는 단계를 넣는다.",rel:["tech","eval"],
+ note:"학생 소감: “우리나라 출산율이 세계에서 꼴찌라는 사실이 충격적이었어요.” → 교사 성찰: 해결 방안을 학생 수준에서 제시하기 쉽지 않지만, 질문하기를 통해 이를 해결할 수 있었다."},
+{id:"c3",no:"③",t:"엔트리 · 100년 뒤 기온 예측",
+ ov:[["학년·교과","초등 6학년 사회 ㅣ 2. 통일 한국의 미래와 지구촌의 평화"],["성취기준","[6사08-05] 지구촌의 주요 환경문제를 조사하여 해결 방안을 탐색하고, 환경문제 해결에 협력하는 세계시민의 자세를 기른다."],["AI·디지털 도구","기상자료개방포털(기상청), 엔트리 데이터 분석·인공지능 모델 학습([예측: 숫자])"],["학습목표","데이터 분석의 과정을 이해하고, 데이터 분석을 통해 100년 뒤 우리나라의 온도를 예측하며 지구 온난화의 해결 방법을 발표한다."],["수업 의도","실제 기상 데이터로 미래 환경을 예상해 보고, 환경 문제 해결에 협력하는 세계시민의 자질을 기른다."]],
+ flow:[["문제 상황 알아보기","북극곰·지구 온난화 영상을 보며 지구 온난화의 의미와 문제 알아보기"],["데이터 찾아 분석하기","기상자료개방포털 ‘기후통계분석-폭염일수’에서 충남의 10년 폭염일수를 확인하고 엔트리로 분석하기"],["100년 뒤 예측하기","엔트리 [데이터 분석]의 ‘계절별 기온’ 테이블로 [인공지능 모델 학습]([예측: 숫자]) → 연도→연평균 기온 모델을 학습해 100년 뒤 값 확인"],["해석하고 실천 정하기","온도 변화가 생활에 미칠 영향을 쓰고, 모둠 토의로 개인·기업·국가·세계가 실천할 수 있는 규칙 정하기"]],
+ ev:"기온 데이터 분석 · 예측값 해석 · 지구 온난화 영향과 실천 규칙 정하기 (제안: 관찰평가, 활동지-영향 쓰기·실천 규칙)",
+ lv:[["상","데이터에서 찾은 근거와 예측값을 바탕으로 기온 변화의 영향과 실천 규칙을 구체적으로 설명한다."],["중","예측값을 바탕으로 기온 변화의 영향과 실천 규칙을 설명한다."],["하","예측값은 확인했으나 영향과 실천 규칙을 설명하는 데 도움이 필요하다."]],
+ pt:"‘예측값을 얻었는가’가 아니라 ‘예측 → 해석 → 실천 규칙’으로 이어지는 판단 과정을 평가기준에 담았습니다. (강사 제안 예시)",
+ proof:[["문제 상황 알아보기","지구 온난화의 의미와 문제를 이해하는가","영상 시청 후 말·글로 정리한 내용"],["데이터 찾아 분석하기","충남 10년 폭염일수 자료의 변화를 읽는가","엔트리 데이터 분석 화면"],["100년 뒤 예측하기","예측값을 확인하고 그 의미를 설명하는가","모델 학습·예측 화면, 예측값 기록"],["해석하고 실천 정하기","기온 변화의 영향과 실천 규칙을 정하는가","영향 쓰기 활동지, 모둠 실천 규칙"]],
+ lq:{edu:"100년 뒤 기온 값 자체가 목표가 되지 않고, 환경 문제 해결 협력이라는 성취기준 학습으로 이어졌는가?",stu:"예측값을 받아 적기만 했는가, 값이 왜 달라지는지·믿을 수 있는지 학생이 따져 보았는가?",tech:"모델은 지난 추세를 이어 그린 값을 낸다는 점, 즉 ‘예측’의 한계를 초등학생 수준에서 설명할 장면이 있었는가?",eval:"예상→모델 예측값 비교→이유 쓰기처럼, 예측 이후의 해석이 학습의 증거로 남았는가? (활동지: 영향 쓰기, 실천 규칙)",eth:"기상 데이터와 영상 출처를 밝히고, 예측을 확정된 미래처럼 단정하지 않도록 안내했는가?",exec:"기상자료 사이트 접속, 엔트리 로그인(모델 학습 시 필요), 결과가 달라질 때의 혼란에 대비했는가?"},
+ good:[],gap:"예측값이 학습마다 달라질 수 있음 → 값이 달라지는 이유를 토의하고, 예상→예측값 비교→이유 쓰기로 증거를 남긴다.",rel:["tech","eval"]}
+];
+const case3 = id => CASES3.find(c=>c.id===id) || CASES3[0];
+const LENSN = Object.fromEntries(LENS6.map(l=>[l[0],l[1]]));
+function gapAreas(){
+  const m = {};
+  LENS6.forEach(([k,n,aid])=>{ if(st.lensRate[k]==="gap") m[aid] = (m[aid]||[]).concat(n); });
+  return m;
+}
+function panelCases(){
+  const c = case3(st.cs);
+  const tabs = CASES3.map(x=>`<button class="tabbtn" role="tab" aria-selected="${x.id===c.id}" data-act="viewcase" data-c="${x.id}">사례 ${x.no} ${x.t}</button>`).join("");
+  return `<section class="slip"><div class="slip-head"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">1단계 · 사례 탐색</span>${qprog()}</div></div><div class="body">
+    <h2>세 가지 수업을 살펴보세요</h2>
+    <p class="lead">교안의 데이터 분석 수업 사례입니다. 하나씩 읽어 보고, 내 수업과 가장 가까운 사례를 골라 다음 단계에서 렌즈로 분석합니다.</p>
+    <div class="casetabs" role="tablist" aria-label="사례 고르기">${tabs}</div>
+    <h3>사례 ${c.no} ${c.t}</h3>
+    <dl class="cdl">${c.ov.map(([a,b])=>`<dt>${a}</dt><dd>${xesc(b)}</dd>`).join("")}</dl>
+    <h3>수업 흐름</h3>
+    <div class="flow">${c.flow.map(([a,b],i)=>`<div class="fstep"><span class="n">${i+1}</span><div><b>${xesc(a)}</b><span class="d">${xesc(b)}</span></div></div>`).join("")}</div>
+    <h3>평가 계획과 기준</h3>
+    <p class="exline">${xesc(c.ev)}</p>
+    ${c.lv.map(([a,b])=>`<div class="lvl ${a==="상"?"hi":a==="하"?"lo":""}"><b>${a}</b><span>${xesc(b)}</span></div>`).join("")}
+    <p class="mapnote">${xesc(c.pt)}</p>
+    <h3>학습의 증거</h3>
+    <div class="etab"><div class="erow h"><span>수업 단계</span><span>확인하려는 학습</span><span>학습의 증거(예)</span></div>${c.proof.map(r=>`<div class="erow">${r.map(v=>`<span>${xesc(v)}</span>`).join("")}</div>`).join("")}</div>
+    <p class="hint">‘상·중·하 평가기준 가운데 과정을 보여 주는 증거는 무엇인가요?’ 생각하며 읽어 보세요.</p>
+    <div class="row">${backBtn()}<button class="btn primary" data-act="tolens" data-c="${c.id}">사례 ${c.no}로 렌즈 분석하기</button></div>
+  </div></section>`;
+}
+function panelLens(){
+  const c = case3(st.lensCase);
+  const rows = LENS6.map(([k,n,aid])=>{
+    const r = st.lensRate[k]||"";
+    const hot = st.lensRev && c.rel.includes(k);
+    return `<div class="crow ${hot?"first":""}">
+      <div class="tags"><b>${n} 렌즈</b>${hot?'<span class="badge">강사가 짚은 렌즈</span>':""}</div>
+      <p class="q">${xesc(c.lq[k])}</p>
+      <div class="lensrate" role="group" aria-label="${n} 렌즈 판단">${RATES.map(([v,l])=>`<button class="chipbtn" data-act="rate" data-k="${k}" data-v="${v}" aria-pressed="${r===v}">${l}</button>`).join("")}</div>
+      <label class="field">눈에 띈 장면 한 줄 (선택)
+        <input type="text" data-b="lensMemo.${k}" value="${attr(st.lensMemo[k]||"")}" placeholder="이 수업의 어느 장면에서 그렇게 보았나요?">
+      </label>
+    </div>`;
+  }).join("");
+  const done = LENS6.filter(([k])=>st.lensRate[k]).length;
+  const rev = st.lensRev? `<div class="hit" id="lensrev">
+      <h3>강사 정리</h3>
+      ${c.good.length? `<b>잘된 점</b><ul>${c.good.map(([a,b])=>`<li><b>${xesc(a)}</b> — ${xesc(b)}</li>`).join("")}</ul>`:""}
+      <b>성찰에서 찾은 개선 요소</b>
+      <p>${xesc(c.gap)}</p>
+      <p class="hint">관련 렌즈: ${c.rel.map(k=>LENSN[k]).join(" · ")}. 내가 고른 판단: ${c.rel.map(k=>LENSN[k]+" "+((RATES.find(r=>r[0]===st.lensRate[k])||[0,"선택 안 함"])[1])).join(" / ")}</p>
+      ${c.note? `<p class="exline">${xesc(c.note)}</p>`:""}
+      <p class="hint">성찰은 비판이 아니라 Re-design 과제를 찾는 일입니다. 개선 요소는 ‘문제 → 해결 방향’ 한 쌍으로 적습니다.</p>
+    </div>`:"";
+  return `<section class="slip"><div class="slip-head"><span class="rxmark" aria-hidden="true">℞</span><div class="qh"><span class="eyebrow">2단계 · 렌즈 분석</span>${qprog()}</div></div><div class="body">
+    <h2>사례 ${c.no} ${c.t}, 여섯 렌즈로 보면?</h2>
+    <p class="lead">렌즈마다 이 수업 장면을 보고 판단해 보세요. 정답은 없고, 모두 고른 뒤 ‘강사 정리 보기’로 비교해 봅니다.</p>
+    <div class="casetabs" role="tablist" aria-label="분석할 사례">${CASES3.map(x=>`<button class="tabbtn" role="tab" aria-selected="${x.id===c.id}" data-act="lenscase" data-c="${x.id}">사례 ${x.no}</button>`).join("")}</div>
+    ${rows}
+    <div class="row"><button class="btn ${done===6?"primary":""}" data-act="lensrev">강사 정리 보기</button><span class="hint">${done} / 6 판단함</span></div>
+    ${rev}
+    <div class="row">${backBtn()}<button class="btn primary" data-act="tosurvey">어려운 점 설문으로</button></div>
+  </div></section>`;
+}
+
 /* ===== 도우미 탭: 개선 문장 · 6요소 점검 · 8단계 매핑 · 발표 카드 ===== */
 const TABS = [["rx","처방·정리"],["frame","① 개선 문장"],["chk","② 6요소 점검"],["map","③ 8단계 매핑"],["talk","④ 발표 카드"]];
 const CHK_Q = {
@@ -1015,6 +1141,15 @@ function talkScript(v){
 }
 function extraText(){
   let t = "";
+  const rated = LENS6.filter(([k])=>st.lensRate[k]);
+  if(rated.length){
+    const c = case3(st.lensCase);
+    t += "[사례 렌즈 분석]\n분석한 사례: "+c.no+" "+c.t+"\n";
+    rated.forEach(([k,n])=>{
+      t += n+" 렌즈: "+RATES.find(r=>r[0]===st.lensRate[k])[1]+((st.lensMemo[k]||"").trim()? " — "+st.lensMemo[k].trim() : "")+"\n";
+    });
+    t += "\n";
+  }
   const fv = frameVals();
   if(fv.scene.trim()){ t += "[개선 문장]\n"+frameSentence(fv)+"\n\n"; }
   const rows = ELKEYS.filter(k=>st.chk[k].lv);
@@ -1363,6 +1498,13 @@ app.addEventListener("click", async e=>{
     document.querySelectorAll(".chipbtn").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===st.filter));
     document.querySelectorAll(".item").forEach(el=>{ el.hidden = st.filter!=="all" && el.dataset.lv!==st.filter; });
   }
+  else if(act==="tocases") go("cases");
+  else if(act==="viewcase"){ st.cs = b.dataset.c; keepScroll(render); }
+  else if(act==="tolens"){ st.lensCase = b.dataset.c; st.lensRev = false; go("lens"); }
+  else if(act==="lenscase"){ st.lensCase = b.dataset.c; st.lensRev = false; st.lensRate = {}; st.lensMemo = {}; keepScroll(render); }
+  else if(act==="rate"){ const k = b.dataset.k; st.lensRate[k] = st.lensRate[k]===b.dataset.v? "" : b.dataset.v; keepScroll(render); }
+  else if(act==="lensrev"){ st.lensRev = true; render(); const r = document.getElementById("lensrev"); if(r) r.scrollIntoView({block:"start"}); }
+  else if(act==="tosurvey") go("area");
   else if(act==="resetboard") resetBoard();
   else if(act==="tab"){ st.tab = b.dataset.t; renderResult(); window.scrollTo({top:0}); }
   else if(act==="lv"){ const x = st.chk[b.dataset.k]; x.lv = x.lv===b.dataset.v? "" : b.dataset.v; keepScroll(renderTab); }
