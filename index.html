@@ -788,7 +788,6 @@ function go(next){ st.stack.push(st.step); st.step = next; render(); window.scro
 function back(){ if(!st.stack.length) return; st.step = st.stack.pop(); render(); window.scrollTo({top:0}); }
 function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:"",tab:"rx",cs:"c1",lensCase:"c1",lensRate:{},lensMemo:{},lensRev:false,frame:{scene:"",elem:null,evid:null},chk:newChk(),map:newMap(),talk:{why:null,what:null,evid:null}}); render(); window.scrollTo({top:0}); }
 
-const KO = ["가","나","다","라","마","바","사","아","자","차","카","타","파","하","거","너","더","러","머","버"];
 const LV = {now:"바로 가능", class:"수업 중 적용", prep:"준비 필요"};
 const LVMAP = {
  r_interpret:"now", r_guess:"now", r_reason:"now", r_roles:"class", r_check:"now", r_meaning:"class", r_predict:"class",
@@ -818,7 +817,7 @@ function crumbs(){
 }
 function backBtn(){ return st.stack.length? `<button class="btn" data-act="back">이전</button>`:""; }
 function opts(items, act, pressedFn){
-  return `<div class="opts">${items.map((x,i)=>`<button class="opt" data-act="${act}" data-i="${i}"${pressedFn?` aria-pressed="${pressedFn(i)}"`:""}><span class="k">${KO[i]||i+1}</span><span>${x.t}${x.d?`<small>${x.d}</small>`:""}</span></button>`).join("")}</div>`;
+  return `<div class="opts">${items.map((x,i)=>`<button class="opt" data-act="${act}" data-i="${i}"${pressedFn?` aria-pressed="${pressedFn(i)}"`:""}><span class="k">${i+1}</span><span>${x.t}${x.d?`<small>${x.d}</small>`:""}</span></button>`).join("")}</div>`;
 }
 
 function render(){ renderMain(); syncNav(); }
