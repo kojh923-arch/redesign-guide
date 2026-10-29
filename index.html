@@ -314,6 +314,14 @@ input[type=text]:focus,textarea:focus{background:var(--paper)}
 :root[data-theme="dark"] body{background-image:none}
 @media (max-width:560px){.btn{padding:9px 16px}}
 @media (prefers-reduced-motion:reduce){.btn,.opt,.nbtn{transition:none}}
+
+/* 홈 히어로: 흰 스티커 카드 */
+.hero{background:var(--paper);border:3px solid var(--bd);border-radius:30px;box-shadow:0 6px 0 var(--bd);padding:28px 30px 26px;position:relative;overflow:hidden}
+.hero::after{content:"★";position:absolute;right:28px;top:22px;font-size:3.2rem;color:var(--yel);-webkit-text-stroke:3px var(--bd);transform:rotate(14deg);pointer-events:none}
+.hero::before{content:"";position:absolute;right:-30px;bottom:-40px;width:170px;height:170px;border-radius:50%;background:var(--pink);border:3px solid var(--bd);opacity:.9;pointer-events:none}
+.hero > *{position:relative;z-index:1}
+.hero .field input{max-width:640px}
+@media (max-width:560px){.hero{padding:22px 18px}.hero::after{font-size:2.2rem;right:14px;top:14px}.hero::before{width:110px;height:110px;right:-34px;bottom:-34px}}
 </style>
 
 <header id="topbar"><div class="in"><button class="brand" data-nav="intro" aria-label="홈으로"><b>Re-design 길잡이</b><span>모듈 4 · 데이터 분석 수업</span></button><nav id="nav" aria-label="단계 이동"></nav></div></header>
