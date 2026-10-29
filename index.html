@@ -266,7 +266,7 @@ body{background-image:radial-gradient(circle at 8% 14%,rgba(255,255,255,.55) 0 7
 #topbar{background:var(--desk);backdrop-filter:none;border-bottom:3px solid var(--bd)}
 .brand b{font-size:1.2rem}
 .brand b::before{content:"★";display:inline-grid;place-items:center;width:30px;height:30px;margin-right:8px;border-radius:10px;background:var(--yel);color:var(--bd);border:3px solid var(--bd);box-shadow:0 3px 0 var(--bd);font-size:.85rem;vertical-align:middle}
-.nbtn{border:3px solid var(--bd);background:var(--paper);box-shadow:0 3px 0 var(--bd);margin-bottom:3px;font-size:.92rem}
+.nbtn{flex:none;border:3px solid var(--bd);background:var(--paper);box-shadow:0 3px 0 var(--bd);margin-bottom:3px;font-size:.92rem}
 .nbtn:hover{background:var(--tint)}
 .nbtn[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
 .nbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--bd)}
@@ -322,6 +322,32 @@ input[type=text]:focus,textarea:focus{background:var(--paper)}
 .hero > *{position:relative;z-index:1}
 .hero .field input{max-width:640px}
 @media (max-width:560px){.hero{padding:22px 18px}.hero::after{font-size:2.2rem;right:14px;top:14px}.hero::before{width:110px;height:110px;right:-34px;bottom:-34px}}
+
+/* 사례 표 */
+.gt{border:3px solid var(--bd);border-radius:20px;overflow:hidden;background:var(--paper);font-size:.92rem;box-shadow:0 4px 0 var(--bd);margin-bottom:6px}
+.gr{display:grid;gap:0;border-bottom:2px solid var(--rule)}
+.gr:last-child{border-bottom:0}
+.gr > span{padding:10px 14px;min-width:0;overflow-wrap:anywhere}
+.g2 .gr{grid-template-columns:9rem 1fr}
+.g3 .gr{grid-template-columns:3.4rem 9rem 1fr}
+.gr > .lb{background:var(--tint);font-family:var(--font-display);color:var(--ink);border-right:2px solid var(--rule)}
+.g3 .gr > .no{display:grid;place-items:center;font-family:var(--font-display);font-size:1.1rem;color:var(--accent);border-right:2px solid var(--rule)}
+.gr.h{background:var(--bd);color:var(--paper);font-family:var(--font-display);font-size:.88rem}
+.gr.h > span{padding:7px 14px}
+.lb.lv-hi{background:var(--l3);color:var(--l3i)}.lb.lv-mid{background:var(--l4);color:var(--l4i)}.lb.lv-lo{background:var(--l2);color:var(--l2i)}
+.etab{border:3px solid var(--bd);box-shadow:0 4px 0 var(--bd);background:var(--paper)}
+.erow{border-bottom:2px solid var(--rule)}
+.erow.h{background:var(--bd);color:var(--paper);font-family:var(--font-display);font-size:.88rem;letter-spacing:0}
+.erow span:first-child{font-family:var(--font-display);background:var(--tint);margin:-10px 0 -10px -12px;padding:10px 12px}
+.erow.h span:first-child{background:transparent}
+.exline{background:var(--l4);color:var(--l4i);border:3px solid var(--bd);border-radius:16px;padding:10px 14px}
+@media (max-width:560px){
+  .g2 .gr,.g3 .gr{grid-template-columns:1fr}
+  .gr > .lb{border-right:0;border-bottom:2px solid var(--rule)}
+  .gr.h{display:none}
+  .g3 .gr > .no{justify-content:start;border-right:0;padding-bottom:0}
+  .erow span:first-child{margin:-10px -12px 0;padding:8px 12px}
+}
 </style>
 
 <header id="topbar"><div class="in"><button class="brand" data-nav="intro" aria-label="홈으로"><b>Re-design 길잡이</b><span>모듈 4 · 데이터 분석 수업</span></button><nav id="nav" aria-label="단계 이동"></nav></div></header>
@@ -1203,12 +1229,12 @@ function panelCases(){
     <p class="lead">교안의 데이터 분석 수업 사례입니다. 하나씩 읽어 보고, 내 수업과 가장 가까운 사례를 골라 다음 단계에서 렌즈로 분석합니다.</p>
     <div class="casetabs" role="tablist" aria-label="사례 고르기">${tabs}</div>
     <h3>사례 ${c.no} ${c.t}</h3>
-    <dl class="cdl">${c.ov.map(([a,b])=>`<dt>${a}</dt><dd>${xesc(b)}</dd>`).join("")}</dl>
+    <div class="gt g2">${c.ov.map(([a,b])=>`<div class="gr"><span class="lb">${a}</span><span>${xesc(b)}</span></div>`).join("")}</div>
     <h3>수업 흐름</h3>
-    <div class="flow">${c.flow.map(([a,b],i)=>`<div class="fstep"><span class="n">${i+1}</span><div><b>${xesc(a)}</b><span class="d">${xesc(b)}</span></div></div>`).join("")}</div>
+    <div class="gt g3"><div class="gr h"><span>순서</span><span>단계</span><span>활동 내용</span></div>${c.flow.map(([a,b],i)=>`<div class="gr"><span class="no">${i+1}</span><span class="lb">${xesc(a)}</span><span>${xesc(b)}</span></div>`).join("")}</div>
     <h3>평가 계획과 기준</h3>
     <p class="exline">${xesc(c.ev)}</p>
-    ${c.lv.map(([a,b])=>`<div class="lvl ${a==="상"?"hi":a==="하"?"lo":""}"><b>${a}</b><span>${xesc(b)}</span></div>`).join("")}
+    <div class="gt g2"><div class="gr h"><span>수준</span><span>평가기준</span></div>${c.lv.map(([a,b])=>`<div class="gr"><span class="lb lv-${a==="상"?"hi":a==="하"?"lo":"mid"}">${a}</span><span>${xesc(b)}</span></div>`).join("")}</div>
     <p class="mapnote">${xesc(c.pt)}</p>
     <h3>학습의 증거</h3>
     <div class="etab"><div class="erow h"><span>수업 단계</span><span>확인하려는 학습</span><span>학습의 증거(예)</span></div>${c.proof.map(r=>`<div class="erow">${r.map(v=>`<span>${xesc(v)}</span>`).join("")}</div>`).join("")}</div>
