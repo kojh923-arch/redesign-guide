@@ -1,29 +1,29 @@
 <title>Re-design 길잡이</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 /* Layout: every screen is one prescription slip on a desk; questions fill it in, the result is the finished slip. */
 :root{
-  --desk:#F5F3FA; --paper:#FFFFFF; --ink:#2A2838; --muted:#6B6880; --rule:#E3DFF0;
-  --accent:#6A57C8; --accent-ink:#FFFFFF; --tint:#F1EEF9; --stamp:#C2506A;
+  --desk:#EFE9FF; --paper:#FFFFFF; --ink:#2E2160; --muted:#5B5280; --rule:#D9D0F2; --bd:#2E2160;
+  --accent:#8B6CF0; --accent-ink:#FFFFFF; --tint:#F4F0FF; --stamp:#E0527E; --yel:#FFD25E; --pink:#FF8FB1; --mint:#6FD6B0; --sky:#7CC4FF;
   --l1:#DCE7FA; --l1i:#2F4A7D; --l2:#FBE3EA; --l2i:#8A3550; --l3:#DDF1E6; --l3i:#2D6A4A;
   --l4:#FDF0D3; --l4i:#7A5A12; --l5:#EADFF7; --l5i:#5B3F8C; --l6:#D9F0F2; --l6i:#2A6670;
-  --font-display:"Gowun Dodum","Noto Sans KR",system-ui,sans-serif;
+  --font-display:"Jua","Noto Sans KR",system-ui,sans-serif;
   --font-body:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
   --font-mono:"Noto Sans KR",system-ui,sans-serif;
   --hh:60px;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --desk:#1B1A26;--paper:#26243A;--ink:#EEEBF8;--muted:#A9A5C0;--rule:#38354F;
+    --desk:#1B1A26;--paper:#26243A;--ink:#EEEBF8;--muted:#B5B0CE;--rule:#38354F;--bd:#0C0A1A;
     --accent:#A99BF0;--accent-ink:#1B1A26;--tint:#302D48;--stamp:#F29AB0;
     --l1:#2B3A5C;--l1i:#C7D9FA;--l2:#4A2C3A;--l2i:#F8CFDC;--l3:#27443A;--l3i:#C9EBD8;--l4:#493D20;--l4i:#F6E2B0;--l5:#3B2F55;--l5i:#DCCBF5;--l6:#244248;--l6i:#C3E6EA;color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --desk:#1B1A26;--paper:#26243A;--ink:#EEEBF8;--muted:#A9A5C0;--rule:#38354F;
+  --desk:#1B1A26;--paper:#26243A;--ink:#EEEBF8;--muted:#B5B0CE;--rule:#38354F;--bd:#0C0A1A;
   --accent:#A99BF0;--accent-ink:#1B1A26;--tint:#302D48;--stamp:#F29AB0;
   --l1:#2B3A5C;--l1i:#C7D9FA;--l2:#4A2C3A;--l2i:#F8CFDC;--l3:#27443A;--l3i:#C9EBD8;--l4:#493D20;--l4i:#F6E2B0;--l5:#3B2F55;--l5i:#DCCBF5;--l6:#244248;--l6i:#C3E6EA;color-scheme:dark;
 }
@@ -257,6 +257,63 @@ input[type=text]:focus,textarea:focus{background:var(--paper)}
   .slip:not(.rxslip) .lead,.slip:not(.rxslip) h2{max-width:70ch}
 }
 @media (prefers-reduced-motion:reduce){.hcard{transition:none}}
+
+/* ===== 말랑 캐주얼 게임 스타일: 굵은 테두리 · 눌리는 입체 버튼 · 스티커 카드 ===== */
+body{font-family:var(--font-body)}
+h1,h2,h3,.brand b,.hcard .no,.lcard b,.eyebrow,.btn,.nbtn,.chipbtn,.tabbtn,.badge,.opt>span:last-child{font-family:var(--font-display)}
+.opt>span:last-child small{font-family:var(--font-body)}
+body{background-image:radial-gradient(circle at 8% 14%,rgba(255,255,255,.55) 0 70px,transparent 71px),radial-gradient(circle at 94% 6%,rgba(255,255,255,.45) 0 90px,transparent 91px);background-attachment:fixed}
+#topbar{background:var(--desk);backdrop-filter:none;border-bottom:3px solid var(--bd)}
+.brand b{font-size:1.2rem}
+.brand b::before{content:"★";display:inline-grid;place-items:center;width:30px;height:30px;margin-right:8px;border-radius:10px;background:var(--yel);color:var(--bd);border:3px solid var(--bd);box-shadow:0 3px 0 var(--bd);font-size:.85rem;vertical-align:middle}
+.nbtn{border:3px solid var(--bd);background:var(--paper);box-shadow:0 3px 0 var(--bd);margin-bottom:3px;font-size:.92rem}
+.nbtn:hover{background:var(--tint)}
+.nbtn[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+.nbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--bd)}
+.slip,.about,.hcard{border:3px solid var(--bd);box-shadow:0 6px 0 var(--bd);border-radius:28px}
+.rxslip{border:3px solid var(--bd);border-top:3px solid var(--bd);border-radius:28px}
+.slip-head h2,.slip h2{font-weight:400}
+.eyebrow{color:var(--bd);background:var(--pink);display:inline-block;border:3px solid var(--bd);border-radius:99px;padding:1px 12px;font-size:.82rem;letter-spacing:0;transform:rotate(-1.5deg);width:fit-content}
+.slip:not(.rxslip) .eyebrow{color:var(--bd)}
+.hero .eyebrow{color:var(--bd)}
+.qprog{gap:6px}
+.qprog i{height:14px;border-radius:99px;border:3px solid var(--bd);background:var(--paper)}
+.qprog i.on{background:var(--mint)}
+.btn{border:3px solid var(--bd);border-radius:18px;background:var(--paper);box-shadow:0 5px 0 var(--bd);padding:9px 20px;margin-bottom:5px;font-weight:400;font-size:1.02rem;transition:transform .08s,box-shadow .08s}
+.btn:hover{background:var(--tint);border-color:var(--bd)}
+.btn.primary{background:var(--yel);color:var(--bd);border-color:var(--bd)}
+.btn.primary:hover{background:var(--yel);filter:brightness(1.05)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--bd)}
+.opts{gap:12px}
+.opt{border:3px solid var(--bd);border-radius:20px;background:var(--tint);box-shadow:0 4px 0 var(--bd);padding:12px 14px;align-items:center;transition:transform .08s,box-shadow .08s}
+.opt:hover{background:var(--paper)}
+.opt:active{transform:translateY(3px);box-shadow:0 1px 0 var(--bd)}
+.opt[aria-pressed="true"]{background:var(--yel);color:var(--bd);font-weight:400}
+.opt[aria-pressed="true"] small{color:var(--bd)}
+.opt .k{width:2.2rem;height:2.2rem;border:3px solid var(--bd);border-radius:12px;background:var(--paper);color:var(--bd);font-size:1rem}
+.opt:hover .k,.opt[aria-pressed="true"] .k{background:var(--paper);color:var(--bd);border-color:var(--bd)}
+.opt[aria-pressed="true"] .k::after{font-size:1.1rem}
+.chipbtn,.tabbtn{border:3px solid var(--bd);background:var(--paper);box-shadow:0 3px 0 var(--bd);margin-bottom:3px;font-weight:400}
+.chipbtn[aria-pressed="true"],.tabbtn[aria-selected="true"],.tabbtn[aria-pressed="true"],.tabbtn.on{background:var(--yel);color:var(--bd);border-color:var(--bd)}
+.crow[class*=" lc"],.lcard{border:3px solid var(--bd);box-shadow:0 4px 0 var(--bd)}
+.crow[class*=" lc"] .chipbtn[aria-pressed="true"]{background:var(--bd);color:var(--paper)}
+.crow.first{border:3px solid var(--bd);box-shadow:0 4px 0 var(--bd),0 0 0 4px var(--yel)}
+.hcard .no{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:3px solid var(--bd);color:var(--bd);font-size:1.25rem}
+.hcard:nth-child(1) .no{background:var(--sky)}.hcard:nth-child(2) .no{background:var(--pink)}.hcard:nth-child(3) .no{background:var(--mint)}
+.hcard:hover{transform:translateY(-3px)}
+.hcard b{font-family:var(--font-display);font-weight:400;font-size:1.15rem}
+.blk > h2{font-size:1.45rem}
+input[type=text],textarea,select{border:3px solid var(--bd);border-radius:16px;background:var(--paper)}
+input[type=text]:focus,textarea:focus{background:var(--paper)}
+.sentbox,.evalbox,.prev,.fstep,.lvl,.etab,.hit,.exb{border:3px solid var(--bd);border-radius:20px}
+.sentbox,.evalbox{background:var(--tint)}
+.badge{background:var(--pink);color:var(--bd);border:2px solid var(--bd)}
+.item.picked::after{border-color:var(--stamp);color:var(--stamp)}
+.tabs{background:var(--desk)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body{background-image:none}}
+:root[data-theme="dark"] body{background-image:none}
+@media (max-width:560px){.btn{padding:9px 16px}}
+@media (prefers-reduced-motion:reduce){.btn,.opt,.nbtn{transition:none}}
 </style>
 
 <header id="topbar"><div class="in"><button class="brand" data-nav="intro" aria-label="홈으로"><b>Re-design 길잡이</b><span>모듈 4 · 데이터 분석 수업</span></button><nav id="nav" aria-label="단계 이동"></nav></div></header>
