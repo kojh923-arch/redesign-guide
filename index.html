@@ -871,13 +871,11 @@ const SCENES = [
 ];
 
 const app = document.getElementById("app");
-const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", sent:{before:"",problem:null,change:null,outcome:""}, evalr:{before:"",after:""}, lesson:"", stack:[], docState:"", tab:"rx", cs:"c1", lensCase:"c1", lensRate:{}, lensMemo:{}, lensRev:false, frame:{scene:"",elem:null,evid:null}, chk:newChk(), map:newMap(), talk:{why:null,what:null,evid:null}};
+const st = {step:"intro", area:null, sit:null, cause:null, scenes:new Set(), picked:new Set(), init:false, filter:"all", sent:{before:"",problem:null,change:null,outcome:""}, evalr:{before:"",after:""}, lesson:"", stack:[], docState:"", tab:"rx", cs:"c1", lensCase:"c1", lensRate:{}, lensMemo:{}, lensRev:false, frame:{scene:"",elem:null,evid:null}, talk:{why:null,what:null,evid:null}};
 
-function newChk(){ const o={}; ["G","A","T","L","S","E"].forEach(k=>o[k]={lv:"",fix:null}); return o; }
-function newMap(){ return [0,1,2,3,4].map(()=>({act:"",role:"",fix:""})); }
 function go(next){ st.stack.push(st.step); st.step = next; render(); window.scrollTo({top:0}); }
 function back(){ if(!st.stack.length) return; st.step = st.stack.pop(); render(); window.scrollTo({top:0}); }
-function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:"",tab:"rx",cs:"c1",lensCase:"c1",lensRate:{},lensMemo:{},lensRev:false,frame:{scene:"",elem:null,evid:null},chk:newChk(),map:newMap(),talk:{why:null,what:null,evid:null}}); render(); window.scrollTo({top:0}); }
+function restart(){ Object.assign(st,{step:"intro",area:null,sit:null,cause:null,scenes:new Set(),picked:new Set(),init:false,filter:"all",sent:{before:"",problem:null,change:null,outcome:""},evalr:{before:"",after:""},stack:[],docState:"",tab:"rx",cs:"c1",lensCase:"c1",lensRate:{},lensMemo:{},lensRev:false,frame:{scene:"",elem:null,evid:null},talk:{why:null,what:null,evid:null}}); render(); window.scrollTo({top:0}); }
 
 const LV = {now:"바로 가능", class:"수업 중 적용", prep:"준비 필요"};
 const LVMAP = {
@@ -1058,7 +1056,7 @@ function renderResult(){
         </dl>
         <div class="strips" role="group" aria-label="요소별 점수">${strips}</div>
         <p class="hint">진하게 표시된 두 요소부터 보세요. 고른 답에서 모인 점수입니다.</p>
-        <p class="hint">위 탭에서 ① 개선 문장 → ② 6요소 점검 → ③ 8단계 매핑 → ④ 발표 카드를 차례로 채울 수 있어요. 각 탭에서 구글 시트에 붙여넣을 표를 복사합니다.</p>
+        <p class="hint">위 탭에서 ① 개선 문장 → ② 발표 카드를 차례로 채울 수 있어요. 각 탭에서 구글 시트에 붙여넣을 표를 복사합니다.</p>
       </div>
       <div class="secthead"><h3>처방 ${list.length}가지</h3><span class="hint">담은 처방은 아래 정리에 모입니다.</span></div>
       <div class="filters" role="group" aria-label="난이도 거르기">${chips}</div>
@@ -1277,23 +1275,8 @@ function panelLens(){
   </div></section>`;
 }
 
-/* ===== 도우미 탭: 개선 문장 · 6요소 점검 · 8단계 매핑 · 발표 카드 ===== */
-const TABS = [["rx","처방·정리"],["frame","① 개선 문장"],["chk","② 6요소 점검"],["map","③ 8단계 매핑"],["talk","④ 발표 카드"]];
-const CHK_Q = {
-  G:"2차시 성찰에서 선정한 개선 요소가 수업 목표에 반영되었는가?",
-  A:"학습 활동이 수업 목표를 달성하도록 짜여 있는가?",
-  T:"AI의 역할이 학생의 사고를 대신하지 않고 지원하는가?",
-  L:"탐구·문제해결·판단의 기회가 충분히 설계되어 있는가?",
-  S:"활동마다 교사가 무엇을 안내·점검할지 구체적인가?",
-  E:"1차시에서 살펴본 평가 관점이 반영되어 있는가?"
-};
-const MAP_ROWS = [
-  ["①","주제·문제 이해","예) 선생님 별명 설문으로 흥미 유발"],
-  ["②·③","수집 방법·도구 / 수집·정제","예) 모둠별 구글 설문 제작·응답 수집"],
-  ["④","분석·시각화","예) 웹앱에 수치 입력, 띠·원그래프 생성"],
-  ["⑤·⑥","AI 모델 / 해석·해결안","예) 그래프 해석 기사문 작성"],
-  ["⑦·⑧","문제 해결 / 공유·성찰","예) 패들렛 공유, 글쓰기 도우미 활용"]
-];
+/* ===== 도우미 탭: 개선 문장 · 발표 카드 ===== */
+const TABS = [["rx","처방·정리"],["frame","① 개선 문장"],["talk","② 발표 카드"]];
 const tm = {left:90, run:false, iv:null};
 function slot(v){ return (v&&String(v).trim())? String(v).trim().replace(/[.。]+$/,"") : "【　　】"; }
 function eul(v){ const w = slot(v), c = w.charCodeAt(w.length-1); return (c>=0xAC00 && c<=0xD7A3)? w+((c-0xAC00)%28? "을":"를") : w+"을(를)"; }
@@ -1319,17 +1302,6 @@ function frameVals(){
 function frameSentence(v){
   return "우리 수업은 "+slot(v.scene)+"에서 학생이 스스로 생각하기를 기대했지만, "+slot(v.elem)+" 때문에 학생의 사고가 충분히 드러나지 않았다. 따라서 "+eul(v.evid)+" 새로 수집하도록 재설계한다.";
 }
-function chkSugg(k){
-  const {picked,list} = ctxInfo();
-  let a = picked.filter(r=>RX[r.id].el.includes(k)).slice(0,2);
-  if(!a.length) a = list.filter(r=>RX[r.id].el.includes(k)).slice(0,1);
-  return a.map(r=>RX[r.id].t);
-}
-function chkFix(k){
-  const x = st.chk[k]; if(x.fix!==null) return x.fix;
-  const sg = chkSugg(k);
-  return ((x.lv==="중"||x.lv==="하") && sg.length)? sg[0] : "";
-}
 function talkVals(){
   const {sit,picked} = ctxInfo(), t = st.talk;
   return {why:t.why===null? sit.t : t.why,
@@ -1352,23 +1324,6 @@ function extraText(){
   }
   const fv = frameVals();
   if(fv.scene.trim()){ t += "[개선 문장]\n"+frameSentence(fv)+"\n\n"; }
-  const rows = ELKEYS.filter(k=>st.chk[k].lv);
-  if(rows.length){
-    t += "[6요소 점검]\n";
-    rows.forEach(k=>{ t += EL[k]+" ("+st.chk[k].lv+")\n"; const f = chkFix(k).trim(); if(f) t += "   - 수정할 점: "+f.replace(/\n/g," / ")+"\n"; });
-    t += "\n";
-  }
-  const mrows = MAP_ROWS.map((r,i)=>[r,st.map[i]]).filter(([r,m])=>m.act.trim()||m.role.trim()||m.fix.trim());
-  if(mrows.length){
-    t += "[8단계 매핑]\n";
-    mrows.forEach(([r,m])=>{
-      t += r[0]+" "+r[1]+"\n";
-      if(m.act.trim()) t += "   - 현재 활동: "+m.act.trim().replace(/\n/g," / ")+"\n";
-      if(m.role.trim()) t += "   - AI·디지털 기술의 역할: "+m.role.trim().replace(/\n/g," / ")+"\n";
-      if(m.fix.trim()) t += "   - 반영할 점: "+m.fix.trim().replace(/\n/g," / ")+"\n";
-    });
-    t += "\n";
-  }
   if(Object.values(st.talk).some(v=>v!==null)){ t += "[발표 대본]\n"+talkScript(talkVals())+"\n\n"; }
   return t;
 }
@@ -1377,8 +1332,6 @@ function tsv(rows){
 }
 function tsvFor(p){
   if(p==="frame"){ const v = frameVals(); return tsv([["장면","설계 요소","학습의 증거","완성 문장"],[v.scene,v.elem,v.evid,frameSentence(v)]]); }
-  if(p==="chk") return tsv([["모형 6요소","점검 질문","상·중·하","수정할 점"]].concat(ELKEYS.map(k=>[EL[k],"내가 실천한 수업은 "+CHK_Q[k],st.chk[k].lv,chkFix(k)])));
-  if(p==="map") return tsv([["모형 단계","현재 내 수업의 활동","AI·디지털 기술의 역할","6요소 점검 결과 반영"]].concat(MAP_ROWS.map((r,i)=>[r[0]+" "+r[1],st.map[i].act,st.map[i].role,st.map[i].fix])));
   const v = talkVals(); return tsv([["문제(왜 바꾸었나)","바꾼 점(무엇을 바꾸었나)","학습의 증거","발표 대본"],[v.why,v.what,v.evid,talkScript(v)]]);
 }
 function copyText(text,okMsg){
@@ -1417,48 +1370,6 @@ function panelFrame(){
     <p class="exline"><b>작성 예시</b> 우리 수업은 그래프 해석에서 학생이 이유를 추론하기를 기대했지만, 웹앱이 그래프를 대신 만들어 주고 기사문 작성 안내가 없어 수치 나열에 그쳤다. 따라서 해석 문장과 수정 전·후 기사문을 증거로 수집하도록 재설계한다.</p>
     ${acts("frame")}`);
 }
-function panelChk(){
-  const {c} = ctxInfo(), top = topEls(c);
-  const rows = ELKEYS.map(k=>{
-    const x = st.chk[k], sg = chkSugg(k), first = top.includes(k);
-    return `<div class="crow ${first?"first":""}">
-      <div class="tags"><b>${EL[k]}</b>${first?'<span class="lv now">길잡이가 먼저 보라고 한 요소</span>':""}</div>
-      <p class="q">내가 실천한 수업은 ${CHK_Q[k]}</p>
-      <div class="lvs" role="group" aria-label="${EL[k]} 상중하">${["상","중","하"].map(l=>`<button class="chipbtn" data-act="lv" data-k="${k}" data-v="${l}" aria-pressed="${x.lv===l}">${l}</button>`).join("")}</div>
-      ${((x.lv==="중"||x.lv==="하") && sg.length)? `<p class="sugg">이 요소에 맞는 처방: ${sg.map(xesc).join(" · ")} (‘처방·정리’ 탭에서 자세히 보세요)</p>`:""}
-      <label class="field">수정할 점 (한 줄)
-        <input type="text" data-b="chk.${k}.fix" value="${attr(chkFix(k))}" placeholder="${x.lv==="상"?"그대로 두어도 좋아요":"이 요소에서 고칠 점"}">
-      </label>
-    </div>`;
-  }).join("");
-  return shell("모형 6요소 점검","3차시 · 실습 ① (PPT 58쪽)",`
-    <p class="lead">내가 실천한 수업을 6요소로 점검하고 수정할 부분을 정합니다. 상·중·하는 스스로 판단해 고르세요. ‘중’이나 ‘하’를 고르면 맞는 처방을 제안해 드려요.</p>
-    ${rows}${acts("chk")}`);
-}
-function panelMap(){
-  const {picked} = ctxInfo();
-  const opts = picked.map(r=>`<option value="${r.id}">${xesc(RX[r.id].t)}</option>`).join("");
-  const rows = MAP_ROWS.map(([n,name,ex],i)=>{
-    const m = st.map[i];
-    return `<div class="crow">
-      <div class="tags"><b>${n}</b><span class="elt">${name}</span></div>
-      <label class="field">현재 내 수업의 활동
-        <textarea data-b="map.${i}.act" placeholder="${attr(ex)}">${xesc(m.act)}</textarea>
-      </label>
-      <label class="field">AI·디지털 기술의 역할
-        <textarea data-b="map.${i}.role" placeholder="예) 웹앱이 그래프를 생성">${xesc(m.role)}</textarea>
-      </label>
-      <label class="field">6요소 점검 결과 반영 (고칠 점)
-        <textarea data-b="map.${i}.fix" placeholder="2번 탭에서 정한 수정할 점을 이 단계에 놓아 보세요">${xesc(m.fix)}</textarea>
-      </label>
-      ${picked.length? `<select data-pick="${i}" aria-label="${n} 단계에 담은 처방 넣기"><option value="">내가 담은 처방을 이 칸에 넣기…</option>${opts}</select>`:""}
-    </div>`;
-  }).join("");
-  return shell("8단계 매핑표","3차시 · 실습 ② (PPT 59쪽)",`
-    <p class="lead">점검한 6요소를 수업이 진행되는 순서(8단계)에 놓고 어디를 고칠지 적습니다. 이 표를 AIEDAP 사이트에 입력하기 전 정리 워크시트로 쓰세요. 예) 문구는 사례 ① 기준입니다.</p>
-    <p class="mapnote">8단계: ①주제·문제 이해 ②수집 방법·도구 ③수집·정제 ④분석·시각화 ⑤AI 모델 ⑥해석·해결안 ⑦문제 해결 ⑧공유·성찰<br>초등 수업에서는 ⑤ AI 모델 설계·적용 단계가 없는 경우가 많습니다. 비워 두거나 ⑥에 포함해도 됩니다.</p>
-    ${rows}${acts("map")}`);
-}
 function panelTalk(){
   tm.left = 90;
   const v = talkVals();
@@ -1482,7 +1393,7 @@ function panelTalk(){
 function renderTab(){
   clearInterval(tm.iv); tm.run = false;
   const t = st.tab;
-  const html = t==="frame"? panelFrame() : t==="chk"? panelChk() : t==="map"? panelMap() : panelTalk();
+  const html = t==="frame"? panelFrame() : panelTalk();
   app.innerHTML = tabbar() + html + `<div class="row">${backBtn()}<button class="btn" data-act="restart">처음부터 다시</button></div>`;
   setupDocx(); updateLive();
 }
@@ -1697,12 +1608,6 @@ app.addEventListener("input", e=>{
   else if(id==="e_before"){ st.evalr.before = e.target.value; buildSummary(); }
   else if(id==="e_after"){ st.evalr.after = e.target.value; buildSummary(); }
 });
-app.addEventListener("change", e=>{
-  const sel = e.target.closest("select[data-pick]"); if(!sel || !sel.value) return;
-  const i = Number(sel.dataset.pick), x = RX[sel.value]; if(!x) return;
-  const m = st.map[i]; m.fix = (m.fix.trim()? m.fix.trim()+"\n":"") + x.t;
-  keepScroll(renderTab);
-});
 app.addEventListener("click", async e=>{
   const b = e.target.closest("[data-act]"); if(!b) return;
   const act = b.dataset.act, i = Number(b.dataset.i);
@@ -1736,7 +1641,6 @@ app.addEventListener("click", async e=>{
   else if(act==="tosurvey") go("area");
   else if(act==="resetboard") resetBoard();
   else if(act==="tab"){ st.tab = b.dataset.t; renderResult(); window.scrollTo({top:0}); }
-  else if(act==="lv"){ const x = st.chk[b.dataset.k]; x.lv = x.lv===b.dataset.v? "" : b.dataset.v; keepScroll(renderTab); }
   else if(act==="tsv"){ copyText(tsvFor(b.dataset.p), "복사했어요. 구글 시트에서 붙여넣기(Ctrl+V) 하세요."); }
   else if(act==="timer"){ timerAct(b.dataset.m); }
   else if(act==="board"){ go("board"); loadBoard(); }
